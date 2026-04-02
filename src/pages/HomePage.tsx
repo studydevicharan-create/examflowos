@@ -22,8 +22,13 @@ export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col px-4 pb-28 pt-12">
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-        <h1 className="text-xl font-bold text-foreground">Good {getGreeting()}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Stay focused. You've got this.</p>
+        <div className="flex items-center justify-between mb-1">
+          <h1 className="text-lg font-bold tracking-wide text-foreground">
+            Exam<span className="text-primary">Flow</span>OS
+          </h1>
+          <span className="text-[10px] tracking-wider text-muted-foreground/40">imdvichrn</span>
+        </div>
+        <p className="text-sm text-muted-foreground">Good {getGreeting()}. Stay focused.</p>
       </motion.div>
 
       {/* Quick Stats */}
@@ -82,6 +87,7 @@ export default function HomePage() {
         <div className="mt-16 flex flex-col items-center text-center">
           <TrendingUp className="h-10 w-10 text-muted-foreground/40" />
           <p className="mt-4 text-sm text-muted-foreground">No subjects yet</p>
+          <p className="mt-1 text-[10px] text-muted-foreground/50">Start your flow. — ExamFlowOS</p>
           <button
             onClick={() => navigate('/subjects')}
             className="mt-3 rounded-lg bg-primary px-5 py-2 text-sm font-medium text-primary-foreground"

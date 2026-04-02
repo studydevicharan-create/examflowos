@@ -144,6 +144,15 @@ export function addFlashcard(topicId: string, subjectId: string, prompt: string,
   return card;
 }
 
+export function updateFlashcard(id: string, updates: Partial<Flashcard>) {
+  const cards = getFlashcards();
+  const idx = cards.findIndex(c => c.id === id);
+  if (idx !== -1) {
+    cards[idx] = { ...cards[idx], ...updates };
+    saveFlashcards(cards);
+  }
+}
+
 export function deleteFlashcard(id: string) {
   saveFlashcards(getFlashcards().filter(c => c.id !== id));
 }

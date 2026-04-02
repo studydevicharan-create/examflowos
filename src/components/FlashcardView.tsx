@@ -184,6 +184,7 @@ export default function FlashcardView({ card, onEasy, onHard, onSkip, onOpenNote
       <p className="mt-6 text-[10px] text-muted-foreground text-center leading-relaxed">
         Swipe right: Easy • Up: Hard • Left: Skip
       </p>
+      <p className="mt-1 text-[8px] text-muted-foreground/30 tracking-widest">Flow</p>
 
       <div className="mt-4 flex gap-3">
         <button onClick={() => resetAndAdvance(onSkip)} className="rounded-lg border border-border px-5 py-2 text-xs text-muted-foreground transition-colors hover:bg-secondary">
