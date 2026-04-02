@@ -1,10 +1,14 @@
 import { motion } from 'framer-motion';
+import { MoreVertical } from 'lucide-react';
 import type { Subject } from '@/lib/types';
 import { getNodes, getNodeProgress } from '@/lib/store';
 
 interface Props {
   subject: Subject;
   onClick: () => void;
+  onDelete: () => void;
+  onMenuOpen: (id: string) => void;
+  menuOpen: boolean;
 }
 
 const COLORS: Record<string, string> = {
@@ -16,7 +20,7 @@ const COLORS: Record<string, string> = {
   cyan: 'hsl(192 91% 50%)',
 };
 
-export default function SubjectCard({ subject, onClick }: Props) {
+export default function SubjectCard({ subject, onClick, onDelete, onMenuOpen, menuOpen }: Props) {
   const nodes = getNodes();
   const progress = getNodeProgress(subject.rootNodeId, nodes);
   const rootNode = nodes[subject.rootNodeId];
@@ -24,35 +28,64 @@ export default function SubjectCard({ subject, onClick }: Props) {
   const accent = COLORS[subject.color] || COLORS.blue;
 
   return (
-    <motion.button
-      whileTap={{ scale: 0.97 }}
-      onClick={onClick}
-      className="w-full rounded-lg border border-border bg-card p-4 text-left transition-colors duration-150 hover:bg-secondary"
-    >
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-3 w-3 rounded-full" style={{ backgroundColor: accent }} />
-          <div>
-            <h3 className="text-sm font-semibold text-foreground">{subject.title}</h3>
-            <p className="text-xs text-muted-foreground">{unitCount} unit{unitCount !== 1 ? 's' : ''}</p>
+    <div className="relative">
+      <motion.button
+        whileTap={{ scale: 0.97 }}
+        onClick={onClick}
+        className="w-full min-h-[72px] rounded-lg border border-border bg-card p-4 text-left transition-colors duration-150 active:bg-secondary"
+      >
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="h-3 w-3 flex-shrink-0 rounded-full" style={{ backgroundColor: accent }} />
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-foreground truncate">{subject.title}</h3>
+              <p className="text-xs text-muted-foreground">{unitCount} unit{unitCount !== 1 ? 's' : ''}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <span className="text-xs font-medium text-muted-foreground">{progress}%</span>
+            <button
+              onClick={(e) => { e.stopPropagation(); onMenuOpen(subject.id); }}
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center -mr-2 text-muted-foreground"
+            >
+              <MoreVertical className="h-4 w-4" />
+            </button>
           </div>
         </div>
-        <span className="text-xs font-medium text-muted-foreground">{progress}%</span>
-      </div>
-      <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-muted">
-        <motion.div
-          className="h-full rounded-full"
-          style={{ backgroundColor: accent }}
-          initial={{ width: 0 }}
-          animate={{ width: `${progress}%` }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-        />
-      </div>
-      {subject.lastStudied && (
-        <p className="mt-2 text-[10px] text-muted-foreground">
-          Last studied {new Date(subject.lastStudied).toLocaleDateString()}
-        </p>
+        <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-muted">
+          <motion.div
+            className="h-full rounded-full"
+            style={{ backgroundColor: accent }}
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+          />
+        </div>
+        {subject.lastStudied && (
+          <p className="mt-2 text-[10px] text-muted-foreground">
+            Last studied {new Date(subject.lastStudied).toLocaleDateString()}
+          </p>
+        )}
+      </motion.button>
+
+      {/* Dropdown menu */}
+      {menuOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); onMenuOpen(''); }} />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="absolute right-2 top-12 z-50 w-48 rounded-lg border border-border bg-card shadow-lg overflow-hidden"
+          >
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="flex w-full items-center gap-3 px-4 py-3 text-xs text-destructive transition-colors active:bg-destructive/10"
+            >
+              Delete Subject
+            </button>
+          </motion.div>
+        </>
       )}
-    </motion.button>
+    </div>
   );
 }

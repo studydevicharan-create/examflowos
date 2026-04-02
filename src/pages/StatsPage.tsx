@@ -14,7 +14,7 @@ export default function StatsPage() {
   const avgAccuracy = totalReviews > 0 ? Math.round((totalEase / totalReviews) * 100) : 0;
 
   return (
-    <div className="flex min-h-screen flex-col px-4 pb-24 pt-12">
+    <div className="flex min-h-screen flex-col px-4 pb-28 pt-12">
       <h1 className="text-xl font-bold text-foreground">Stats</h1>
 
       <div className="mt-6 grid grid-cols-2 gap-3">

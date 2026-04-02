@@ -20,7 +20,7 @@ export default function HomePage() {
     : 0;
 
   return (
-    <div className="flex min-h-screen flex-col px-4 pb-24 pt-12">
+    <div className="flex min-h-screen flex-col px-4 pb-28 pt-12">
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
         <h1 className="text-xl font-bold text-foreground">Good {getGreeting()}</h1>
         <p className="mt-1 text-sm text-muted-foreground">Stay focused. You've got this.</p>
