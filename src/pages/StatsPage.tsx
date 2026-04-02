@@ -1,4 +1,4 @@
-import { getSubjects, getFlashcards, getNodes, getNodeProgress, getDailyStats } from '@/lib/store';
+import { getSubjects, getFlashcards, getNodes, getNodeProgress, getDailyStats, isWeakCard } from '@/lib/store';
 
 export default function StatsPage() {
   const subjects = getSubjects();
@@ -8,10 +8,10 @@ export default function StatsPage() {
 
   const today = stats.find(s => s.date === new Date().toISOString().slice(0, 10));
   const totalCards = cards.length;
-  const avgAccuracy = totalCards > 0
-    ? Math.round(cards.reduce((a, c) => a + c.accuracy, 0) / totalCards * 100)
-    : 0;
-  const weakCount = cards.filter(c => c.accuracy < 0.5 || c.hardCount > 2).length;
+  const weakCount = cards.filter(c => isWeakCard(c)).length;
+  const totalEase = cards.reduce((a, c) => a + c.easeCount, 0);
+  const totalReviews = cards.reduce((a, c) => a + c.easeCount + c.hardCount + c.skipCount, 0);
+  const avgAccuracy = totalReviews > 0 ? Math.round((totalEase / totalReviews) * 100) : 0;
 
   return (
     <div className="flex min-h-screen flex-col px-4 pb-24 pt-12">
@@ -26,7 +26,6 @@ export default function StatsPage() {
         <StatBox label="Subjects" value={subjects.length} />
       </div>
 
-      {/* Subject Progress */}
       {subjects.length > 0 && (
         <div className="mt-8">
           <h2 className="mb-3 text-sm font-semibold text-foreground">Subject Progress</h2>
@@ -49,20 +48,21 @@ export default function StatsPage() {
         </div>
       )}
 
-      {/* Weak Topics */}
       {weakCount > 0 && (
         <div className="mt-8">
           <h2 className="mb-3 text-sm font-semibold text-foreground">Focus Topics</h2>
           <div className="space-y-2">
-            {cards.filter(c => c.accuracy < 0.5).slice(0, 5).map(c => {
+            {cards.filter(c => isWeakCard(c)).slice(0, 5).map(c => {
               const topicNode = nodes[c.topicId];
+              const total = c.easeCount + c.hardCount + c.skipCount;
+              const acc = total > 0 ? Math.round((c.easeCount / total) * 100) : 0;
               return (
                 <div key={c.id} className="flex items-center justify-between rounded-lg border border-border bg-card p-3">
                   <div>
-                    <p className="text-xs font-medium text-foreground">{c.front}</p>
+                    <p className="text-xs font-medium text-foreground">{c.prompt}</p>
                     {topicNode && <p className="text-[10px] text-muted-foreground">{topicNode.title}</p>}
                   </div>
-                  <span className="text-xs text-destructive">{Math.round(c.accuracy * 100)}%</span>
+                  <span className="text-xs text-destructive">{acc}%</span>
                 </div>
               );
             })}

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
+import { FileText } from 'lucide-react';
 import type { Flashcard } from '@/lib/types';
 
 interface Props {
@@ -7,35 +8,48 @@ interface Props {
   onEasy: () => void;
   onHard: () => void;
   onSkip: () => void;
+  onOpenNotes?: () => void;
   current: number;
   total: number;
 }
 
-export default function FlashcardView({ card, onEasy, onHard, onSkip, current, total }: Props) {
-  const [flipped, setFlipped] = useState(false);
+export default function FlashcardView({ card, onEasy, onHard, onSkip, onOpenNotes, current, total }: Props) {
+  const [revealed, setRevealed] = useState(false);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-15, 15]);
-  const bgOpacity = useTransform(x, [-150, 0, 150], [0.3, 0, 0.3]);
 
-  const [swipeColor, setSwipeColor] = useState<string | null>(null);
+  const [flash, setFlash] = useState<'easy' | 'hard' | 'skip' | null>(null);
+
+  const resetAndAdvance = useCallback((action: () => void) => {
+    setRevealed(false);
+    action();
+  }, []);
 
   const handleDragEnd = useCallback((_: unknown, info: { offset: { x: number; y: number } }) => {
     if (info.offset.x > 80) {
-      setSwipeColor('hsl(142 71% 45%)');
-      setTimeout(() => { setSwipeColor(null); onEasy(); setFlipped(false); }, 200);
+      setFlash('easy');
+      setTimeout(() => { setFlash(null); resetAndAdvance(onEasy); }, 200);
     } else if (info.offset.x < -80) {
-      setSwipeColor(null);
-      onSkip();
-      setFlipped(false);
+      setFlash('skip');
+      setTimeout(() => { setFlash(null); resetAndAdvance(onSkip); }, 200);
     } else if (info.offset.y < -60) {
-      setSwipeColor('hsl(0 84% 60%)');
-      setTimeout(() => { setSwipeColor(null); onHard(); setFlipped(false); }, 200);
+      setFlash('hard');
+      setTimeout(() => { setFlash(null); resetAndAdvance(onHard); }, 200);
     }
-  }, [onEasy, onHard, onSkip]);
+  }, [onEasy, onHard, onSkip, resetAndAdvance]);
+
+  const flashColors = {
+    easy: 'bg-success/20',
+    hard: 'bg-destructive/20',
+    skip: 'bg-muted/30',
+  };
+
+  const hasReveal = card.reveal && card.reveal.trim().length > 0;
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-4">
+      {/* Progress bar */}
       <div className="mb-6 flex w-full items-center justify-between px-2">
         <span className="text-xs text-muted-foreground">{current} / {total}</span>
         <div className="h-1 flex-1 mx-4 overflow-hidden rounded-full bg-muted">
@@ -47,52 +61,112 @@ export default function FlashcardView({ card, onEasy, onHard, onSkip, current, t
         </div>
       </div>
 
-      <div className="relative w-full max-w-sm" style={{ perspective: 1000 }}>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={card.id + (flipped ? '-back' : '-front')}
-            drag
-            dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-            dragElastic={0.7}
-            onDragEnd={handleDragEnd}
-            style={{ x, y, rotate }}
-            onClick={() => setFlipped(f => !f)}
-            className="relative flex min-h-[320px] cursor-pointer items-center justify-center rounded-xl border border-border bg-card p-8 shadow-lg select-none"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-          >
-            {swipeColor && (
-              <motion.div
-                className="pointer-events-none absolute inset-0 rounded-xl"
-                style={{ backgroundColor: swipeColor, opacity: bgOpacity }}
-              />
-            )}
-            <div className="text-center">
-              <p className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">
-                {flipped ? 'Answer' : 'Question'}
-              </p>
-              <p className="text-lg font-medium text-foreground leading-relaxed">
-                {flipped ? card.back : card.front}
-              </p>
-            </div>
-          </motion.div>
+      {/* Card */}
+      <div className="relative w-full max-w-sm">
+        {/* Flash overlay */}
+        <AnimatePresence>
+          {flash && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className={`pointer-events-none absolute inset-0 z-10 rounded-xl ${flashColors[flash]}`}
+            />
+          )}
         </AnimatePresence>
+
+        <motion.div
+          key={card.id}
+          drag
+          dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+          dragElastic={0.7}
+          onDragEnd={handleDragEnd}
+          style={{ x, y, rotate }}
+          className="relative flex min-h-[320px] cursor-pointer flex-col items-center justify-center rounded-xl border border-border bg-card p-8 shadow-lg select-none"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.2 }}
+        >
+          {/* Prompt — always visible */}
+          <div className="text-center">
+            <p className="mb-3 text-[10px] uppercase tracking-widest text-muted-foreground">
+              Prompt
+            </p>
+            <p className="text-lg font-medium text-foreground leading-relaxed">
+              {card.prompt}
+            </p>
+          </div>
+
+          {/* Reveal section */}
+          <AnimatePresence>
+            {revealed && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="mt-6 w-full border-t border-border pt-4 text-center"
+              >
+                <p className="mb-2 text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Reveal
+                </p>
+                {hasReveal ? (
+                  <p className="text-base text-foreground/90 leading-relaxed">
+                    {card.reveal}
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      No answer saved. Check notes or textbook.
+                    </p>
+                    {onOpenNotes && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onOpenNotes(); }}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-xs text-primary transition-colors hover:bg-secondary"
+                      >
+                        <FileText className="h-3 w-3" /> Open Notes
+                      </button>
+                    )}
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Tap to reveal hint */}
+          {!revealed && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setRevealed(true); }}
+              className="mt-8 text-xs text-primary/70 transition-colors hover:text-primary"
+            >
+              Tap to reveal
+            </button>
+          )}
+        </motion.div>
       </div>
 
-      <p className="mt-6 text-[10px] text-muted-foreground">
-        Tap to flip • Swipe right: Easy • Up: Hard • Left: Skip
+      <p className="mt-6 text-[10px] text-muted-foreground text-center leading-relaxed">
+        Swipe right: Easy • Up: Hard • Left: Skip
       </p>
 
+      {/* Accessibility buttons */}
       <div className="mt-4 flex gap-3">
-        <button onClick={() => { onSkip(); setFlipped(false); }} className="rounded-lg border border-border px-5 py-2 text-xs text-muted-foreground transition-colors hover:bg-secondary">
+        <button
+          onClick={() => resetAndAdvance(onSkip)}
+          className="rounded-lg border border-border px-5 py-2 text-xs text-muted-foreground transition-colors hover:bg-secondary"
+        >
           Skip
         </button>
-        <button onClick={() => { onHard(); setFlipped(false); }} className="rounded-lg border border-destructive/30 px-5 py-2 text-xs text-destructive transition-colors hover:bg-destructive/10">
+        <button
+          onClick={() => resetAndAdvance(onHard)}
+          className="rounded-lg border border-destructive/30 px-5 py-2 text-xs text-destructive transition-colors hover:bg-destructive/10"
+        >
           Hard
         </button>
-        <button onClick={() => { onEasy(); setFlipped(false); }} className="rounded-lg border border-success/30 px-5 py-2 text-xs text-success transition-colors hover:bg-success/10">
+        <button
+          onClick={() => resetAndAdvance(onEasy)}
+          className="rounded-lg border border-success/30 px-5 py-2 text-xs text-success transition-colors hover:bg-success/10"
+        >
           Easy
         </button>
       </div>

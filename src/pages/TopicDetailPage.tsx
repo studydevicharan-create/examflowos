@@ -9,8 +9,8 @@ export default function TopicDetailPage() {
   const navigate = useNavigate();
   const [nodes, setNodes] = useState(getNodes);
   const [showAddCard, setShowAddCard] = useState(false);
-  const [cardFront, setCardFront] = useState('');
-  const [cardBack, setCardBack] = useState('');
+  const [cardPrompt, setCardPrompt] = useState('');
+  const [cardReveal, setCardReveal] = useState('');
 
   const node = nodes[nodeId || ''];
   const cards = getFlashcards().filter(c => c.topicId === nodeId);
@@ -25,10 +25,10 @@ export default function TopicDetailPage() {
   }, [node, notes, refresh]);
 
   const handleAddCard = () => {
-    if (!cardFront.trim() || !cardBack.trim() || !nodeId || !node) return;
-    addFlashcard(nodeId, node.subjectId, cardFront.trim(), cardBack.trim());
-    setCardFront('');
-    setCardBack('');
+    if (!cardPrompt.trim() || !nodeId || !node) return;
+    addFlashcard(nodeId, node.subjectId, cardPrompt.trim(), cardReveal.trim());
+    setCardPrompt('');
+    setCardReveal('');
     setShowAddCard(false);
   };
 
@@ -91,7 +91,7 @@ export default function TopicDetailPage() {
         <div className="flex gap-3">
           <motion.button
             whileTap={{ scale: 0.97 }}
-            onClick={() => cards.length > 0 && navigate(`/recall/session?topic=${nodeId}`)}
+            onClick={() => cards.length > 0 && navigate(`/recall/session?mode=topic&topic=${nodeId}`)}
             disabled={cards.length === 0}
             className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-40"
           >
@@ -103,25 +103,33 @@ export default function TopicDetailPage() {
             onClick={() => setShowAddCard(true)}
             className="flex items-center gap-2 rounded-lg border border-border px-4 py-3 text-sm text-foreground"
           >
-            <Plus className="h-4 w-4" /> Card
+            <Plus className="h-4 w-4" /> Add Card
           </motion.button>
         </div>
 
+        {/* Card count + list */}
         {cards.length > 0 && (
           <div>
-            <h2 className="mb-2 text-sm font-semibold text-foreground">Flashcards</h2>
+            <h2 className="mb-2 text-sm font-semibold text-foreground">{cards.length} Card{cards.length !== 1 ? 's' : ''}</h2>
             <div className="space-y-2">
               {cards.map(c => (
                 <div key={c.id} className="rounded-lg border border-border bg-secondary p-3">
-                  <p className="text-xs font-medium text-foreground">{c.front}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{c.back}</p>
+                  <p className="text-xs font-medium text-foreground">{c.prompt}</p>
+                  {c.reveal && <p className="mt-1 text-xs text-muted-foreground">{c.reveal}</p>}
                 </div>
               ))}
             </div>
           </div>
         )}
+
+        {cards.length === 0 && (
+          <div className="rounded-lg border border-dashed border-border p-6 text-center">
+            <p className="text-sm text-muted-foreground">No cards yet. Add your first question.</p>
+          </div>
+        )}
       </div>
 
+      {/* Add Card Modal */}
       {showAddCard && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -136,26 +144,40 @@ export default function TopicDetailPage() {
             className="w-full max-w-[768px] rounded-t-2xl border-t border-border bg-card p-6"
           >
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-foreground">Add Flashcard</h2>
+              <h2 className="text-sm font-semibold text-foreground">Add Card</h2>
               <button onClick={() => setShowAddCard(false)} className="text-muted-foreground"><X className="h-5 w-5" /></button>
             </div>
-            <input
-              autoFocus
-              value={cardFront}
-              onChange={e => setCardFront(e.target.value)}
-              placeholder="Question"
-              className="w-full rounded-lg border border-border bg-secondary px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary mb-3"
-            />
-            <textarea
-              value={cardBack}
-              onChange={e => setCardBack(e.target.value)}
-              placeholder="Answer"
-              rows={3}
-              className="w-full rounded-lg border border-border bg-secondary px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary resize-none"
-            />
+
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Prompt *</label>
+                <input
+                  autoFocus
+                  value={cardPrompt}
+                  onChange={e => setCardPrompt(e.target.value)}
+                  placeholder="Ask your future self something… (e.g., What is EMF?)"
+                  className="w-full rounded-lg border border-border bg-secondary px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Reveal (optional)</label>
+                <textarea
+                  value={cardReveal}
+                  onChange={e => setCardReveal(e.target.value)}
+                  placeholder="Short answer, formula, or hint (optional)"
+                  rows={3}
+                  className="w-full rounded-lg border border-border bg-secondary px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary resize-none"
+                />
+              </div>
+            </div>
+
+            <p className="mt-3 text-[10px] text-muted-foreground leading-relaxed">
+              Keep it short. One idea per card.{'\n'}If you can't recall, check Reveal or open your notes.
+            </p>
+
             <button
               onClick={handleAddCard}
-              disabled={!cardFront.trim() || !cardBack.trim()}
+              disabled={!cardPrompt.trim()}
               className="mt-4 w-full rounded-lg bg-primary py-3 text-sm font-medium text-primary-foreground disabled:opacity-40"
             >
               Add Card
