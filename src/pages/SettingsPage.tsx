@@ -187,9 +187,15 @@ export default function SettingsPage() {
         </Section>
 
         {/* About */}
-        <div className="rounded-lg border border-border bg-card p-4">
-          <p className="text-xs text-muted-foreground">
-            StudyRecall v1.0 • Offline-first • All data stored locally
+        <div className="rounded-lg border border-border bg-card p-4 text-center">
+          <p className="text-sm font-bold tracking-wide text-foreground">
+            Exam<span className="text-primary">Flow</span>OS
+          </p>
+          <p className="mt-1 text-[10px] text-muted-foreground">
+            Created by imdvichrn
+          </p>
+          <p className="mt-2 text-[10px] text-muted-foreground/60">
+            v1.0 • Offline-first • All data stored locally
           </p>
         </div>
       </div>
