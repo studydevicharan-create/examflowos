@@ -3,22 +3,26 @@ export interface SyllabusNode {
   parentId: string | null;
   subjectId: string;
   title: string;
-  depth: number; // 0=subject, 1=unit, 2=topic, 3+=subtopic
+  depth: number;
   completed: boolean;
   important: boolean;
-  notes: string; // bullet-point markdown
-  lastRevised: string | null; // ISO date
+  notes: string;
+  lastRevised: string | null;
   order: number;
-  children: string[]; // child node IDs
+  children: string[];
   tags: ('important' | 'formula' | 'theory')[];
 }
+
+export type CardType = 'text' | 'image';
 
 export interface Flashcard {
   id: string;
   topicId: string;
   subjectId: string;
-  prompt: string; // the question / trigger
-  reveal: string; // answer / hint (optional — can be empty)
+  type: CardType;
+  prompt: string;
+  reveal: string;
+  image: string; // base64 data URL for image cards, empty for text
   // Tracking
   easeCount: number;
   hardCount: number;
@@ -48,4 +52,4 @@ export interface DailyStats {
   studyStreak: number;
 }
 
-export type RecallMode = 'topic' | 'subject' | 'weak' | 'random' | 'exam' | 'important';
+export type RecallMode = 'topic' | 'subject' | 'weak' | 'random' | 'exam' | 'important' | 'image';

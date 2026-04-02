@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Brain, AlertTriangle, Shuffle, GraduationCap, Star } from 'lucide-react';
+import { Brain, AlertTriangle, Shuffle, GraduationCap, Star, Image } from 'lucide-react';
 import { getSubjects, getFlashcards, getCardsForReview, isWeakCard } from '@/lib/store';
 
 export default function RecallPage() {
@@ -9,11 +9,13 @@ export default function RecallPage() {
   const subjects = getSubjects();
   const allCards = getFlashcards();
   const weakCards = allCards.filter(c => isWeakCard(c));
+  const imageCards = allCards.filter(c => c.type === 'image');
 
   const modes = [
     { id: 'random', label: 'All Cards', icon: Shuffle, count: allCards.length, desc: 'Every card in your deck' },
     { id: 'important', label: 'Important Only', icon: Star, count: getCardsForReview('important').length, desc: 'Cards from starred topics' },
     { id: 'weak', label: 'Weak Only', icon: AlertTriangle, count: weakCards.length, desc: 'Cards you struggle with' },
+    { id: 'image', label: 'Image Only', icon: Image, count: imageCards.length, desc: 'Visual recall — diagrams & formulas' },
     { id: 'exam', label: 'Exam Mode', icon: GraduationCap, count: getCardsForReview('exam').length, desc: 'Weak + important combined' },
   ];
 
@@ -22,6 +24,7 @@ export default function RecallPage() {
       <h1 className="text-xl font-bold text-foreground">Recall</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         {allCards.length} total card{allCards.length !== 1 ? 's' : ''} • {weakCards.length} weak
+        {imageCards.length > 0 && ` • ${imageCards.length} visual`}
       </p>
 
       <div className="mt-6 space-y-3">
