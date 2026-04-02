@@ -22,8 +22,13 @@ export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col px-4 pb-28 pt-12">
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-        <h1 className="text-xl font-bold text-foreground">Good {getGreeting()}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Stay focused. You've got this.</p>
+        <div className="flex items-center justify-between mb-1">
+          <h1 className="text-lg font-bold tracking-wide text-foreground">
+            Exam<span className="text-primary">Flow</span>OS
+          </h1>
+          <span className="text-[10px] tracking-wider text-muted-foreground/40">imdvichrn</span>
+        </div>
+        <p className="text-sm text-muted-foreground">Good {getGreeting()}. Stay focused.</p>
       </motion.div>
 
       {/* Quick Stats */}
