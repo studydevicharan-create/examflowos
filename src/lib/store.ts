@@ -131,9 +131,9 @@ export function saveFlashcards(cards: Flashcard[]) {
   save(KEYS.flashcards, cards);
 }
 
-export function addFlashcard(topicId: string, subjectId: string, prompt: string, reveal: string): Flashcard {
+export function addFlashcard(topicId: string, subjectId: string, prompt: string, reveal: string, image: string = '', type: 'text' | 'image' = 'text'): Flashcard {
   const card: Flashcard = {
-    id: uuidv4(), topicId, subjectId, prompt, reveal,
+    id: uuidv4(), topicId, subjectId, type, prompt, reveal, image,
     easeCount: 0, hardCount: 0, skipCount: 0,
     lastSeen: null, easeFactor: 2.5, interval: 1,
     repetitions: 0, nextReview: new Date().toISOString(),
