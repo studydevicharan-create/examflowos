@@ -81,6 +81,7 @@ export default function SubjectsPage() {
       {subjects.length === 0 && !showAdd && (
         <div className="mt-16 text-center">
           <p className="text-sm text-muted-foreground">No subjects yet</p>
+          <p className="mt-1 text-[10px] text-muted-foreground/50">Start your flow. — ExamFlowOS</p>
           <button onClick={() => setShowAdd(true)} className="mt-3 min-h-[44px] text-sm text-primary">
             Add your first subject
           </button>
