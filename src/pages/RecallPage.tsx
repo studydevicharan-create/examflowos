@@ -20,7 +20,7 @@ export default function RecallPage() {
   ];
 
   return (
-    <div className="flex min-h-screen flex-col px-4 pb-24 pt-12">
+    <div className="flex min-h-screen flex-col px-4 pb-28 pt-12">
       <h1 className="text-xl font-bold text-foreground">Recall</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         {allCards.length} total card{allCards.length !== 1 ? 's' : ''} • {weakCards.length} weak

@@ -29,7 +29,7 @@ export default function SubjectDetailPage() {
   if (!subject) return <div className="p-4 text-muted-foreground">Subject not found</div>;
 
   return (
-    <div className="flex min-h-screen flex-col pb-24 pt-4">
+    <div className="flex min-h-screen flex-col pb-28 pt-4">
       <div className="flex items-center gap-3 px-4 py-3">
         <button onClick={() => navigate('/subjects')} className="text-muted-foreground">
           <ArrowLeft className="h-5 w-5" />
