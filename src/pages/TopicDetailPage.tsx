@@ -13,20 +13,19 @@ export default function TopicDetailPage() {
   const [cardBack, setCardBack] = useState('');
 
   const node = nodes[nodeId || ''];
-  if (!node) return <div className="p-4 text-muted-foreground">Topic not found</div>;
-
   const cards = getFlashcards().filter(c => c.topicId === nodeId);
+  const [notes, setNotes] = useState(node?.notes || '');
+
   const refresh = useCallback(() => setNodes(getNodes()), []);
 
-  const [notes, setNotes] = useState(node.notes);
-
   const saveNotes = useCallback(() => {
+    if (!node) return;
     updateNode(node.id, { notes });
     refresh();
-  }, [node.id, notes, refresh]);
+  }, [node, notes, refresh]);
 
   const handleAddCard = () => {
-    if (!cardFront.trim() || !cardBack.trim() || !nodeId) return;
+    if (!cardFront.trim() || !cardBack.trim() || !nodeId || !node) return;
     addFlashcard(nodeId, node.subjectId, cardFront.trim(), cardBack.trim());
     setCardFront('');
     setCardBack('');
@@ -34,14 +33,18 @@ export default function TopicDetailPage() {
   };
 
   const toggleImportant = () => {
+    if (!node) return;
     updateNode(node.id, { important: !node.important });
     refresh();
   };
 
   const toggleComplete = () => {
+    if (!node) return;
     updateNode(node.id, { completed: !node.completed, lastRevised: new Date().toISOString() });
     refresh();
   };
+
+  if (!node) return <div className="p-4 text-muted-foreground">Topic not found</div>;
 
   return (
     <div className="flex min-h-screen flex-col pb-24 pt-4">
@@ -56,7 +59,6 @@ export default function TopicDetailPage() {
       </div>
 
       <div className="space-y-6 px-4 mt-4">
-        {/* Status */}
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <button
             onClick={toggleComplete}
@@ -69,7 +71,6 @@ export default function TopicDetailPage() {
           )}
         </div>
 
-        {/* Notes */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-sm font-semibold text-foreground">Notes</h2>
@@ -87,7 +88,6 @@ export default function TopicDetailPage() {
           />
         </div>
 
-        {/* Actions */}
         <div className="flex gap-3">
           <motion.button
             whileTap={{ scale: 0.97 }}
@@ -107,7 +107,6 @@ export default function TopicDetailPage() {
           </motion.button>
         </div>
 
-        {/* Cards list */}
         {cards.length > 0 && (
           <div>
             <h2 className="mb-2 text-sm font-semibold text-foreground">Flashcards</h2>
@@ -123,7 +122,6 @@ export default function TopicDetailPage() {
         )}
       </div>
 
-      {/* Add Card Modal */}
       {showAddCard && (
         <motion.div
           initial={{ opacity: 0 }}

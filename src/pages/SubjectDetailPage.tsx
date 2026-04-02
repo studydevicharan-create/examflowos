@@ -13,10 +13,8 @@ export default function SubjectDetailPage() {
   const [newTitle, setNewTitle] = useState('');
 
   const subject = getSubjects().find(s => s.id === id);
-  if (!subject) return <div className="p-4 text-muted-foreground">Subject not found</div>;
-
-  const rootNode = nodes[subject.rootNodeId];
-  const progress = getNodeProgress(subject.rootNodeId, nodes);
+  const rootNode = subject ? nodes[subject.rootNodeId] : undefined;
+  const progress = subject ? getNodeProgress(subject.rootNodeId, nodes) : 0;
 
   const refresh = useCallback(() => setNodes(getNodes()), []);
 
@@ -28,9 +26,10 @@ export default function SubjectDetailPage() {
     refresh();
   };
 
+  if (!subject) return <div className="p-4 text-muted-foreground">Subject not found</div>;
+
   return (
     <div className="flex min-h-screen flex-col pb-24 pt-4">
-      {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3">
         <button onClick={() => navigate('/subjects')} className="text-muted-foreground">
           <ArrowLeft className="h-5 w-5" />
@@ -56,7 +55,6 @@ export default function SubjectDetailPage() {
         />
       </div>
 
-      {/* Tree */}
       <div className="mt-4 px-2">
         {rootNode?.children.map(childId => (
           <TreeNode
@@ -66,7 +64,6 @@ export default function SubjectDetailPage() {
             onNodeTap={(nodeId) => {
               const node = nodes[nodeId];
               if (node && node.children.length > 0) {
-                // Has children, allow adding sub-items
                 setShowAdd(nodeId);
               } else {
                 navigate(`/topic/${nodeId}`);
@@ -85,7 +82,6 @@ export default function SubjectDetailPage() {
         )}
       </div>
 
-      {/* Add Modal */}
       <AnimatePresence>
         {showAdd && (
           <motion.div

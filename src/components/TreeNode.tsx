@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, Check, Star } from 'lucide-react';
 import type { SyllabusNode } from '@/lib/types';
-import { getNodes, updateNode, getNodeProgress } from '@/lib/store';
+import { updateNode, getNodeProgress } from '@/lib/store';
 
 interface Props {
   nodeId: string;
@@ -31,15 +31,6 @@ export default function TreeNode({ nodeId, nodes, onNodeTap, onRefresh }: Props)
   }, [hasChildren]);
 
   if (!node) return null;
-    e.stopPropagation();
-    updateNode(nodeId, { completed: !node.completed, lastRevised: new Date().toISOString() });
-    onRefresh();
-  }, [nodeId, node.completed, onRefresh]);
-
-  const toggleExpand = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (hasChildren) setExpanded(v => !v);
-  }, [hasChildren]);
 
   return (
     <div>
@@ -61,9 +52,7 @@ export default function TreeNode({ nodeId, nodes, onNodeTap, onRefresh }: Props)
         <button
           onClick={toggleComplete}
           className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border transition-all duration-150 ${
-            node.completed
-              ? 'border-primary bg-primary'
-              : 'border-muted-foreground/40'
+            node.completed ? 'border-primary bg-primary' : 'border-muted-foreground/40'
           }`}
         >
           {node.completed && <Check className="h-3 w-3 text-primary-foreground" />}
