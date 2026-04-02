@@ -213,6 +213,9 @@ export function getCardsForReview(mode: string, subjectId?: string, topicId?: st
         return isWeakCard(c) || node?.important;
       });
       break;
+    case 'image':
+      pool = cards.filter(c => c.type === 'image');
+      break;
     default: // random — all cards
       pool = [...cards];
   }
