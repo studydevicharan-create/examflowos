@@ -87,6 +87,7 @@ export default function HomePage() {
         <div className="mt-16 flex flex-col items-center text-center">
           <TrendingUp className="h-10 w-10 text-muted-foreground/40" />
           <p className="mt-4 text-sm text-muted-foreground">No subjects yet</p>
+          <p className="mt-1 text-[10px] text-muted-foreground/50">Start your flow. — ExamFlowOS</p>
           <button
             onClick={() => navigate('/subjects')}
             className="mt-3 rounded-lg bg-primary px-5 py-2 text-sm font-medium text-primary-foreground"
