@@ -1,0 +1,83 @@
+import { getSubjects, getFlashcards, getNodes, getNodeProgress, getDailyStats } from '@/lib/store';
+
+export default function StatsPage() {
+  const subjects = getSubjects();
+  const cards = getFlashcards();
+  const nodes = getNodes();
+  const stats = getDailyStats();
+
+  const today = stats.find(s => s.date === new Date().toISOString().slice(0, 10));
+  const totalCards = cards.length;
+  const avgAccuracy = totalCards > 0
+    ? Math.round(cards.reduce((a, c) => a + c.accuracy, 0) / totalCards * 100)
+    : 0;
+  const weakCount = cards.filter(c => c.accuracy < 0.5 || c.hardCount > 2).length;
+
+  return (
+    <div className="flex min-h-screen flex-col px-4 pb-24 pt-12">
+      <h1 className="text-xl font-bold text-foreground">Stats</h1>
+
+      <div className="mt-6 grid grid-cols-2 gap-3">
+        <StatBox label="Total Cards" value={totalCards} />
+        <StatBox label="Avg Accuracy" value={`${avgAccuracy}%`} />
+        <StatBox label="Weak Cards" value={weakCount} />
+        <StatBox label="Streak" value={`${today?.studyStreak ?? 0}d`} />
+        <StatBox label="Reviewed Today" value={today?.cardsReviewed ?? 0} />
+        <StatBox label="Subjects" value={subjects.length} />
+      </div>
+
+      {/* Subject Progress */}
+      {subjects.length > 0 && (
+        <div className="mt-8">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">Subject Progress</h2>
+          <div className="space-y-3">
+            {subjects.map(s => {
+              const progress = getNodeProgress(s.rootNodeId, nodes);
+              return (
+                <div key={s.id} className="rounded-lg border border-border bg-card p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-foreground">{s.title}</span>
+                    <span className="text-xs text-muted-foreground">{progress}%</span>
+                  </div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                    <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progress}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Weak Topics */}
+      {weakCount > 0 && (
+        <div className="mt-8">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">Focus Topics</h2>
+          <div className="space-y-2">
+            {cards.filter(c => c.accuracy < 0.5).slice(0, 5).map(c => {
+              const topicNode = nodes[c.topicId];
+              return (
+                <div key={c.id} className="flex items-center justify-between rounded-lg border border-border bg-card p-3">
+                  <div>
+                    <p className="text-xs font-medium text-foreground">{c.front}</p>
+                    {topicNode && <p className="text-[10px] text-muted-foreground">{topicNode.title}</p>}
+                  </div>
+                  <span className="text-xs text-destructive">{Math.round(c.accuracy * 100)}%</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StatBox({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-lg border border-border bg-card p-4 text-center">
+      <p className="text-xl font-bold text-foreground">{value}</p>
+      <p className="mt-1 text-[10px] text-muted-foreground">{label}</p>
+    </div>
+  );
+}

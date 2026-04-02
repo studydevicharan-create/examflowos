@@ -14,12 +14,23 @@ interface Props {
 export default function TreeNode({ nodeId, nodes, onNodeTap, onRefresh }: Props) {
   const [expanded, setExpanded] = useState(false);
   const node = nodes[nodeId];
-  if (!node) return null;
 
-  const hasChildren = node.children.length > 0;
-  const progress = getNodeProgress(nodeId, nodes);
+  const hasChildren = node ? node.children.length > 0 : false;
+  const progress = node ? getNodeProgress(nodeId, nodes) : 0;
 
   const toggleComplete = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!node) return;
+    updateNode(nodeId, { completed: !node.completed, lastRevised: new Date().toISOString() });
+    onRefresh();
+  }, [nodeId, node, onRefresh]);
+
+  const toggleExpand = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (hasChildren) setExpanded(v => !v);
+  }, [hasChildren]);
+
+  if (!node) return null;
     e.stopPropagation();
     updateNode(nodeId, { completed: !node.completed, lastRevised: new Date().toISOString() });
     onRefresh();
