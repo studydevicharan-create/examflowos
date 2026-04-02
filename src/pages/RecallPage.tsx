@@ -1,26 +1,28 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Brain, BookOpen, AlertTriangle, Shuffle, GraduationCap } from 'lucide-react';
-import { getSubjects, getFlashcards, getCardsForReview } from '@/lib/store';
+import { Brain, AlertTriangle, Shuffle, GraduationCap, Star } from 'lucide-react';
+import { getSubjects, getFlashcards, getCardsForReview, isWeakCard } from '@/lib/store';
 
 export default function RecallPage() {
   const navigate = useNavigate();
   const subjects = getSubjects();
   const allCards = getFlashcards();
-  const dueCards = allCards.filter(c => new Date(c.nextReview) <= new Date());
-  const weakCards = allCards.filter(c => c.accuracy < 0.5 || c.hardCount > 2);
+  const weakCards = allCards.filter(c => isWeakCard(c));
 
   const modes = [
-    { id: 'random', label: 'Random Mix', icon: Shuffle, count: dueCards.length, desc: 'All due cards' },
-    { id: 'weak', label: 'Weak Topics', icon: AlertTriangle, count: weakCards.length, desc: 'Low accuracy cards' },
-    { id: 'exam', label: 'Exam Mode', icon: GraduationCap, count: getCardsForReview('exam').length, desc: 'Focus on weak + important' },
+    { id: 'random', label: 'All Cards', icon: Shuffle, count: allCards.length, desc: 'Every card in your deck' },
+    { id: 'important', label: 'Important Only', icon: Star, count: getCardsForReview('important').length, desc: 'Cards from starred topics' },
+    { id: 'weak', label: 'Weak Only', icon: AlertTriangle, count: weakCards.length, desc: 'Cards you struggle with' },
+    { id: 'exam', label: 'Exam Mode', icon: GraduationCap, count: getCardsForReview('exam').length, desc: 'Weak + important combined' },
   ];
 
   return (
     <div className="flex min-h-screen flex-col px-4 pb-24 pt-12">
       <h1 className="text-xl font-bold text-foreground">Recall</h1>
-      <p className="mt-1 text-sm text-muted-foreground">{dueCards.length} cards due for review</p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {allCards.length} total card{allCards.length !== 1 ? 's' : ''} • {weakCards.length} weak
+      </p>
 
       <div className="mt-6 space-y-3">
         {modes.map(m => (
@@ -41,7 +43,6 @@ export default function RecallPage() {
         ))}
       </div>
 
-      {/* Subject-based recall */}
       {subjects.length > 0 && (
         <div className="mt-8">
           <h2 className="mb-3 text-sm font-semibold text-foreground">By Subject</h2>

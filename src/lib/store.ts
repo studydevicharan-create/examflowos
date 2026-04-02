@@ -100,11 +100,9 @@ export function deleteNode(id: string) {
   const nodes = getNodes();
   const node = nodes[id];
   if (!node) return;
-  // Remove from parent
   if (node.parentId && nodes[node.parentId]) {
     nodes[node.parentId].children = nodes[node.parentId].children.filter(c => c !== id);
   }
-  // Delete recursively
   const deleteRecursive = (nid: string) => {
     const n = nodes[nid];
     if (!n) return;
@@ -113,7 +111,6 @@ export function deleteNode(id: string) {
   };
   deleteRecursive(id);
   saveNodes(nodes);
-  // Delete associated flashcards
   saveFlashcards(getFlashcards().filter(c => c.topicId !== id));
 }
 
@@ -134,12 +131,12 @@ export function saveFlashcards(cards: Flashcard[]) {
   save(KEYS.flashcards, cards);
 }
 
-export function addFlashcard(topicId: string, subjectId: string, front: string, back: string): Flashcard {
+export function addFlashcard(topicId: string, subjectId: string, prompt: string, reveal: string): Flashcard {
   const card: Flashcard = {
-    id: uuidv4(), topicId, subjectId, front, back,
-    easeFactor: 2.5, interval: 1, repetitions: 0,
-    nextReview: new Date().toISOString(), lastSeen: null,
-    accuracy: 0, streak: 0, hardCount: 0, totalReviews: 0,
+    id: uuidv4(), topicId, subjectId, prompt, reveal,
+    easeCount: 0, hardCount: 0, skipCount: 0,
+    lastSeen: null, easeFactor: 2.5, interval: 1,
+    repetitions: 0, nextReview: new Date().toISOString(),
   };
   const cards = getFlashcards();
   cards.push(card);
@@ -151,35 +148,29 @@ export function deleteFlashcard(id: string) {
   saveFlashcards(getFlashcards().filter(c => c.id !== id));
 }
 
-// SM-2 algorithm
+// Review: quality 0=skip, 1=hard, 3=easy
 export function reviewCard(cardId: string, quality: number) {
-  // quality: 0=skip, 1=hard, 3=easy
   const cards = getFlashcards();
   const card = cards.find(c => c.id === cardId);
   if (!card) return;
 
-  card.totalReviews++;
   card.lastSeen = new Date().toISOString();
 
   if (quality >= 3) {
-    // Easy
-    card.streak++;
-    card.accuracy = ((card.accuracy * (card.totalReviews - 1)) + 1) / card.totalReviews;
+    card.easeCount++;
     if (card.repetitions === 0) card.interval = 1;
     else if (card.repetitions === 1) card.interval = 6;
     else card.interval = Math.round(card.interval * card.easeFactor);
     card.repetitions++;
     card.easeFactor = Math.max(1.3, card.easeFactor + 0.1);
   } else if (quality === 1) {
-    // Hard
     card.hardCount++;
-    card.streak = 0;
-    card.accuracy = ((card.accuracy * (card.totalReviews - 1)) + 0) / card.totalReviews;
     card.repetitions = 0;
     card.interval = 1;
     card.easeFactor = Math.max(1.3, card.easeFactor - 0.2);
+  } else {
+    card.skipCount++;
   }
-  // quality 0 = skip, no change to interval
 
   const next = new Date();
   next.setDate(next.getDate() + card.interval);
@@ -188,9 +179,15 @@ export function reviewCard(cardId: string, quality: number) {
   saveFlashcards(cards);
 }
 
+// Weak detection: hardCount > easeCount
+export function isWeakCard(card: Flashcard): boolean {
+  return card.hardCount > card.easeCount;
+}
+
 // --- Recall helpers ---
 export function getCardsForReview(mode: string, subjectId?: string, topicId?: string): Flashcard[] {
   const cards = getFlashcards();
+  const nodes = getNodes();
   const now = new Date().toISOString();
 
   let pool: Flashcard[];
@@ -202,21 +199,29 @@ export function getCardsForReview(mode: string, subjectId?: string, topicId?: st
       pool = cards.filter(c => c.subjectId === subjectId);
       break;
     case 'weak':
-      pool = cards.filter(c => c.accuracy < 0.5 || c.hardCount > 2);
+      pool = cards.filter(c => isWeakCard(c));
+      break;
+    case 'important':
+      pool = cards.filter(c => {
+        const node = nodes[c.topicId];
+        return node?.important;
+      });
       break;
     case 'exam':
-      pool = cards.filter(c => c.accuracy < 0.6 || c.hardCount > 1);
+      pool = cards.filter(c => {
+        const node = nodes[c.topicId];
+        return isWeakCard(c) || node?.important;
+      });
       break;
-    default: // random
+    default: // random — all cards
       pool = [...cards];
   }
 
-  // Prioritize due cards
   pool.sort((a, b) => {
     const aDue = a.nextReview <= now ? 0 : 1;
     const bDue = b.nextReview <= now ? 0 : 1;
     if (aDue !== bDue) return aDue - bDue;
-    return a.easeFactor - b.easeFactor; // harder first
+    return a.easeFactor - b.easeFactor;
   });
 
   return pool;
@@ -232,7 +237,6 @@ export function updateDailyStats(cardsReviewed: number, correct: boolean) {
   const today = new Date().toISOString().slice(0, 10);
   let todayStat = stats.find(s => s.date === today);
   if (!todayStat) {
-    // Calculate streak
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStat = stats.find(s => s.date === yesterday.toISOString().slice(0, 10));

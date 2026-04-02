@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, Check, Brain } from 'lucide-react';
 import FlashcardView from '@/components/FlashcardView';
 import { getCardsForReview, reviewCard, updateDailyStats } from '@/lib/store';
 import type { RecallMode } from '@/lib/types';
@@ -15,12 +15,12 @@ export default function RecallSessionPage() {
 
   const [cards] = useState(() => getCardsForReview(mode, subjectId, topicId));
   const [index, setIndex] = useState(0);
-  const [done, setDone] = useState(false);
+  const [phase, setPhase] = useState<'prerecall' | 'active' | 'done'>('prerecall');
   const [sessionStats, setSessionStats] = useState({ easy: 0, hard: 0, skip: 0 });
 
   const advance = useCallback(() => {
     if (index + 1 >= cards.length) {
-      setDone(true);
+      setPhase('done');
     } else {
       setIndex(i => i + 1);
     }
@@ -46,6 +46,11 @@ export default function RecallSessionPage() {
     advance();
   }, [cards, index, advance]);
 
+  const handleOpenNotes = useCallback(() => {
+    const card = cards[index];
+    if (card) navigate(`/topic/${card.topicId}`);
+  }, [cards, index, navigate]);
+
   if (cards.length === 0) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4">
@@ -55,7 +60,44 @@ export default function RecallSessionPage() {
     );
   }
 
-  if (done) {
+  // Pre-recall screen
+  if (phase === 'prerecall') {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-xs text-center"
+        >
+          <Brain className="mx-auto h-12 w-12 text-primary/60" />
+          <h2 className="mt-6 text-lg font-bold text-foreground">Ready to recall?</h2>
+          <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
+            Try to recall before revealing.{'\n'}
+            Struggle = memory building.
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {cards.length} card{cards.length !== 1 ? 's' : ''} in this session
+          </p>
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={() => setPhase('active')}
+            className="mt-8 w-full rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
+          >
+            Start
+          </motion.button>
+          <button
+            onClick={() => navigate('/recall')}
+            className="mt-3 text-xs text-muted-foreground"
+          >
+            Go back
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Done screen
+  if (phase === 'done') {
     const total = sessionStats.easy + sessionStats.hard + sessionStats.skip;
     const accuracy = total > 0 ? Math.round((sessionStats.easy / total) * 100) : 0;
     return (
@@ -88,6 +130,7 @@ export default function RecallSessionPage() {
     );
   }
 
+  // Active session
   return (
     <div className="flex min-h-screen flex-col pt-4">
       <div className="flex items-center gap-3 px-4 py-2">
@@ -101,6 +144,7 @@ export default function RecallSessionPage() {
         onEasy={handleEasy}
         onHard={handleHard}
         onSkip={handleSkip}
+        onOpenNotes={handleOpenNotes}
         current={index + 1}
         total={cards.length}
       />

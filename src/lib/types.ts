@@ -17,18 +17,18 @@ export interface Flashcard {
   id: string;
   topicId: string;
   subjectId: string;
-  front: string;
-  back: string;
-  // SM-2 fields
-  easeFactor: number; // starts at 2.5
-  interval: number; // days
-  repetitions: number;
-  nextReview: string; // ISO date
-  lastSeen: string | null;
-  accuracy: number; // 0-1
-  streak: number;
+  prompt: string; // the question / trigger
+  reveal: string; // answer / hint (optional — can be empty)
+  // Tracking
+  easeCount: number;
   hardCount: number;
-  totalReviews: number;
+  skipCount: number;
+  lastSeen: string | null;
+  // SM-2 scheduling
+  easeFactor: number;
+  interval: number;
+  repetitions: number;
+  nextReview: string;
 }
 
 export interface Subject {
@@ -48,4 +48,4 @@ export interface DailyStats {
   studyStreak: number;
 }
 
-export type RecallMode = 'topic' | 'subject' | 'weak' | 'random' | 'exam';
+export type RecallMode = 'topic' | 'subject' | 'weak' | 'random' | 'exam' | 'important';
