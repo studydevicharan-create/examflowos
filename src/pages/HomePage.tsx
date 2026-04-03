@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Plus, Brain, TrendingUp } from 'lucide-react';
 import { getSubjects, getFlashcards, getNodes, getNodeProgress, getDailyStats } from '@/lib/store';
+import FocusWidget from '@/components/FocusWidget';
 
 export default function HomePage() {
   const navigate = useNavigate();
