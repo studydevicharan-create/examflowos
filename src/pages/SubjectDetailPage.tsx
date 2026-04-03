@@ -1,9 +1,8 @@
 import { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Plus, X } from 'lucide-react';
-import TreeNode from '@/components/TreeNode';
-import { getSubjects, getNodes, addChildNode, getNodeProgress } from '@/lib/store';
+import { ArrowLeft, Plus, X, ChevronRight, Check, Star, FileText, Brain } from 'lucide-react';
+import { getSubjects, getNodes, addChildNode, getNodeProgress, getFlashcards } from '@/lib/store';
 
 export default function SubjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +14,7 @@ export default function SubjectDetailPage() {
   const subject = getSubjects().find(s => s.id === id);
   const rootNode = subject ? nodes[subject.rootNodeId] : undefined;
   const progress = subject ? getNodeProgress(subject.rootNodeId, nodes) : 0;
+  const allCards = getFlashcards();
 
   const refresh = useCallback(() => setNodes(getNodes()), []);
 
@@ -26,28 +26,33 @@ export default function SubjectDetailPage() {
     refresh();
   };
 
-  if (!subject) return <div className="p-4 text-muted-foreground">Subject not found</div>;
+  if (!subject || !rootNode) return <div className="p-4 text-muted-foreground">Subject not found</div>;
+
+  // Units = direct children of root
+  const units = rootNode.children.map(cid => nodes[cid]).filter(Boolean);
 
   return (
     <div className="flex min-h-screen flex-col pb-28 pt-4">
+      {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3">
-        <button onClick={() => navigate('/subjects')} className="text-muted-foreground">
+        <button onClick={() => navigate('/subjects')} className="text-muted-foreground min-h-[44px] min-w-[44px] flex items-center justify-center">
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <div className="flex-1">
-          <h1 className="text-lg font-bold text-foreground">{subject.title}</h1>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-lg font-bold text-foreground truncate">{subject.title}</h1>
           <p className="text-xs text-muted-foreground">{progress}% complete</p>
         </div>
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={() => setShowAdd(subject.rootNodeId)}
-          className="rounded-full bg-primary p-1.5 text-primary-foreground"
+          className="rounded-full bg-primary p-2 text-primary-foreground min-h-[40px] min-w-[40px] flex items-center justify-center"
         >
           <Plus className="h-4 w-4" />
         </motion.button>
       </div>
 
-      <div className="mt-2 mx-4 h-1 overflow-hidden rounded-full bg-muted">
+      {/* Progress bar */}
+      <div className="mx-4 h-1 overflow-hidden rounded-full bg-muted">
         <motion.div
           className="h-full rounded-full bg-primary"
           animate={{ width: `${progress}%` }}
@@ -55,33 +60,138 @@ export default function SubjectDetailPage() {
         />
       </div>
 
-      <div className="mt-4 px-2">
-        {rootNode?.children.map(childId => (
-          <TreeNode
-            key={childId}
-            nodeId={childId}
-            nodes={nodes}
-            onNodeTap={(nodeId) => {
-              const node = nodes[nodeId];
-              if (node && node.children.length > 0) {
-                setShowAdd(nodeId);
-              } else {
-                navigate(`/topic/${nodeId}`);
-              }
-            }}
-            onRefresh={refresh}
-          />
-        ))}
-        {rootNode?.children.length === 0 && (
-          <div className="mt-12 text-center">
-            <p className="text-sm text-muted-foreground">No units yet</p>
-            <button onClick={() => setShowAdd(subject.rootNodeId)} className="mt-2 text-sm text-primary">
-              Add first unit
-            </button>
-          </div>
-        )}
+      {/* Units list */}
+      <div className="mt-4 px-4 space-y-4">
+        {units.map((unit, i) => {
+          const unitProgress = getNodeProgress(unit.id, nodes);
+          const topics = unit.children.map(tid => nodes[tid]).filter(Boolean);
+
+          return (
+            <motion.div
+              key={unit.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.04 }}
+              className="rounded-xl border border-border bg-card overflow-hidden"
+            >
+              {/* Unit header */}
+              <div className="flex items-center gap-3 px-4 py-3">
+                <div className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border transition-all ${
+                  unit.completed ? 'border-primary bg-primary' : 'border-muted-foreground/30'
+                }`}>
+                  {unit.completed && <Check className="h-3 w-3 text-primary-foreground" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-semibold text-foreground truncate">{unit.title}</h3>
+                  <p className="text-[10px] text-muted-foreground">
+                    {topics.length} topic{topics.length !== 1 ? 's' : ''} • {unitProgress}%
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowAdd(unit.id)}
+                  className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-md text-muted-foreground transition-colors active:bg-secondary"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Unit progress */}
+              <div className="mx-4 h-0.5 overflow-hidden rounded-full bg-muted">
+                <motion.div
+                  className="h-full rounded-full bg-primary/60"
+                  animate={{ width: `${unitProgress}%` }}
+                  transition={{ duration: 0.4 }}
+                />
+              </div>
+
+              {/* Topics inside this unit */}
+              {topics.length > 0 && (
+                <div className="divide-y divide-border/50">
+                  {topics.map(topic => {
+                    const topicCards = allCards.filter(c => c.topicId === topic.id);
+                    const topicProgress = getNodeProgress(topic.id, nodes);
+                    // Check for subtopics
+                    const subtopics = topic.children.map(sid => nodes[sid]).filter(Boolean);
+
+                    return (
+                      <motion.button
+                        key={topic.id}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => {
+                          if (subtopics.length > 0) {
+                            // If topic has subtopics, navigate to topic which acts as a mini-unit
+                            navigate(`/topic/${topic.id}`);
+                          } else {
+                            navigate(`/topic/${topic.id}`);
+                          }
+                        }}
+                        className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors active:bg-secondary/50"
+                      >
+                        <div className="flex h-2 w-2 flex-shrink-0 rounded-full" style={{
+                          backgroundColor: topic.completed
+                            ? 'hsl(var(--success))'
+                            : topicProgress > 0
+                              ? 'hsl(var(--primary))'
+                              : 'hsl(var(--muted-foreground))'
+                        }} />
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm truncate ${topic.completed ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
+                            {topic.title}
+                          </p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {topicCards.length > 0 && (
+                              <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                                <Brain className="h-2.5 w-2.5" /> {topicCards.length}
+                              </span>
+                            )}
+                            {topic.notes && (
+                              <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                                <FileText className="h-2.5 w-2.5" />
+                              </span>
+                            )}
+                            {topic.important && <Star className="h-2.5 w-2.5 text-warning fill-warning" />}
+                            {subtopics.length > 0 && (
+                              <span className="text-[10px] text-muted-foreground">{subtopics.length} sub</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="text-[10px] text-muted-foreground">{topicProgress}%</span>
+                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
+                        </div>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {topics.length === 0 && (
+                <div className="px-4 py-4 text-center">
+                  <p className="text-xs text-muted-foreground/60">No topics yet</p>
+                  <button
+                    onClick={() => setShowAdd(unit.id)}
+                    className="mt-1 text-xs text-primary"
+                  >
+                    + Add first topic
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          );
+        })}
       </div>
 
+      {units.length === 0 && (
+        <div className="mt-12 text-center px-4">
+          <p className="text-sm text-muted-foreground">No units yet</p>
+          <p className="mt-1 text-[10px] text-muted-foreground/50">Start your flow. — ExamFlowOS</p>
+          <button onClick={() => setShowAdd(subject.rootNodeId)} className="mt-3 text-sm text-primary min-h-[44px]">
+            Add first unit
+          </button>
+        </div>
+      )}
+
+      {/* Add Node Modal */}
       <AnimatePresence>
         {showAdd && (
           <motion.div
@@ -97,13 +207,13 @@ export default function SubjectDetailPage() {
               exit={{ y: 200 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               onClick={e => e.stopPropagation()}
-              className="w-full max-w-[768px] rounded-t-2xl border-t border-border bg-card p-6"
+              className="w-full max-w-[768px] rounded-t-2xl border-t border-border bg-card p-6 safe-bottom"
             >
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-sm font-semibold text-foreground">
                   Add to {nodes[showAdd]?.title || 'Node'}
                 </h2>
-                <button onClick={() => setShowAdd(null)} className="text-muted-foreground">
+                <button onClick={() => setShowAdd(null)} className="text-muted-foreground min-h-[44px] min-w-[44px] flex items-center justify-center">
                   <X className="h-5 w-5" />
                 </button>
               </div>
@@ -112,13 +222,13 @@ export default function SubjectDetailPage() {
                 value={newTitle}
                 onChange={e => setNewTitle(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleAddChild(showAdd)}
-                placeholder="Title"
-                className="w-full rounded-lg border border-border bg-secondary px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
+                placeholder={showAdd === subject.rootNodeId ? 'Unit name (e.g. Chapter 1)' : 'Topic name'}
+                className="w-full min-h-[48px] rounded-lg border border-border bg-secondary px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
               />
               <button
                 onClick={() => handleAddChild(showAdd)}
                 disabled={!newTitle.trim()}
-                className="mt-4 w-full rounded-lg bg-primary py-3 text-sm font-medium text-primary-foreground disabled:opacity-40"
+                className="mt-4 w-full min-h-[48px] rounded-lg bg-primary py-3 text-sm font-medium text-primary-foreground disabled:opacity-40"
               >
                 Add
               </button>

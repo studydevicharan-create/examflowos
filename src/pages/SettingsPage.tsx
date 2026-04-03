@@ -1,12 +1,15 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Download, Upload, AlertTriangle, ChevronRight } from 'lucide-react';
+import { Trash2, Download, Upload, AlertTriangle, ChevronDown, BookOpen, Palette, Zap, Database, Brain } from 'lucide-react';
 import { getSettings, saveSettings, type AppSettings } from '@/lib/settings';
+
+type SectionKey = 'study' | 'flashcard' | 'appearance' | 'performance' | 'data' | null;
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<AppSettings>(getSettings);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [importMessage, setImportMessage] = useState('');
+  const [openSection, setOpenSection] = useState<SectionKey>(null);
 
   const update = useCallback((patch: Partial<AppSettings>) => {
     const next = { ...settings, ...patch };
@@ -14,10 +17,12 @@ export default function SettingsPage() {
     saveSettings(next);
   }, [settings]);
 
+  const toggle = (key: SectionKey) => setOpenSection(prev => prev === key ? null : key);
+
   const clearData = () => {
     const s = getSettings();
     localStorage.clear();
-    saveSettings(s); // preserve settings
+    saveSettings(s);
     window.location.reload();
   };
 
@@ -60,9 +65,14 @@ export default function SettingsPage() {
     <div className="flex min-h-screen flex-col px-4 pb-28 pt-12 overflow-y-auto">
       <h1 className="text-xl font-bold text-foreground">Settings</h1>
 
-      <div className="mt-6 space-y-6">
-        {/* STUDY SETTINGS */}
-        <Section title="Study">
+      <div className="mt-6 space-y-3">
+        {/* STUDY */}
+        <AccordionSection
+          icon={<BookOpen className="h-4 w-4" />}
+          title="Study"
+          open={openSection === 'study'}
+          onToggle={() => toggle('study')}
+        >
           <Row label="Daily Goal" description={`${settings.dailyGoalMinutes} minutes`}>
             <select
               value={settings.dailyGoalMinutes}
@@ -87,10 +97,15 @@ export default function SettingsPage() {
           </Row>
           <ToggleRow label="Auto-reveal answer" checked={settings.autoReveal} onChange={v => update({ autoReveal: v })} />
           <ToggleRow label="Shuffle cards" checked={settings.shuffleCards} onChange={v => update({ shuffleCards: v })} />
-        </Section>
+        </AccordionSection>
 
-        {/* FLASHCARD SETTINGS */}
-        <Section title="Flashcard">
+        {/* FLASHCARD */}
+        <AccordionSection
+          icon={<Brain className="h-4 w-4" />}
+          title="Flashcard"
+          open={openSection === 'flashcard'}
+          onToggle={() => toggle('flashcard')}
+        >
           <Row label="Swipe Sensitivity">
             <SegmentedControl
               options={['low', 'medium', 'high']}
@@ -105,10 +120,15 @@ export default function SettingsPage() {
               onChange={v => update({ flipSpeed: v as AppSettings['flipSpeed'] })}
             />
           </Row>
-        </Section>
+        </AccordionSection>
 
         {/* APPEARANCE */}
-        <Section title="Appearance">
+        <AccordionSection
+          icon={<Palette className="h-4 w-4" />}
+          title="Appearance"
+          open={openSection === 'appearance'}
+          onToggle={() => toggle('appearance')}
+        >
           <Row label="Theme">
             <SegmentedControl
               options={['dark', 'light']}
@@ -144,59 +164,57 @@ export default function SettingsPage() {
               onChange={v => update({ fontSize: v as AppSettings['fontSize'] })}
             />
           </Row>
-        </Section>
+        </AccordionSection>
 
         {/* PERFORMANCE */}
-        <Section title="Performance">
+        <AccordionSection
+          icon={<Zap className="h-4 w-4" />}
+          title="Performance"
+          open={openSection === 'performance'}
+          onToggle={() => toggle('performance')}
+        >
           <ToggleRow label="Reduce animations" checked={settings.reduceAnimations} onChange={v => update({ reduceAnimations: v })} />
-        </Section>
+        </AccordionSection>
 
-        {/* DATA MANAGEMENT */}
-        <Section title="Data">
+        {/* DATA */}
+        <AccordionSection
+          icon={<Database className="h-4 w-4" />}
+          title="Data"
+          open={openSection === 'data'}
+          onToggle={() => toggle('data')}
+        >
           <button
             onClick={exportData}
-            className="flex w-full items-center justify-between min-h-[48px] px-1 py-3 text-sm text-foreground"
+            className="flex w-full items-center gap-3 min-h-[48px] py-3 text-sm text-foreground transition-colors active:opacity-70"
           >
-            <div className="flex items-center gap-3">
-              <Download className="h-4 w-4 text-muted-foreground" />
-              <span>Export Data (JSON)</span>
-            </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            <Download className="h-4 w-4 text-muted-foreground" />
+            <span>Export Data (JSON)</span>
           </button>
 
-          <label className="flex w-full cursor-pointer items-center justify-between min-h-[48px] px-1 py-3 text-sm text-foreground">
-            <div className="flex items-center gap-3">
-              <Upload className="h-4 w-4 text-muted-foreground" />
-              <span>Import Data</span>
-            </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          <label className="flex w-full cursor-pointer items-center gap-3 min-h-[48px] py-3 text-sm text-foreground transition-colors active:opacity-70">
+            <Upload className="h-4 w-4 text-muted-foreground" />
+            <span>Import Data</span>
             <input type="file" accept=".json" onChange={importData} className="hidden" />
           </label>
 
-          {importMessage && (
-            <p className="text-xs text-primary px-1">{importMessage}</p>
-          )}
+          {importMessage && <p className="text-xs text-primary">{importMessage}</p>}
 
           <button
             onClick={() => setShowClearConfirm(true)}
-            className="flex w-full items-center gap-3 min-h-[48px] px-1 py-3 text-sm text-destructive"
+            className="flex w-full items-center gap-3 min-h-[48px] py-3 text-sm text-destructive"
           >
             <Trash2 className="h-4 w-4" />
             <span>Clear All Data</span>
           </button>
-        </Section>
+        </AccordionSection>
 
         {/* About */}
-        <div className="rounded-lg border border-border bg-card p-4 text-center">
+        <div className="mt-4 rounded-xl border border-border bg-card p-5 text-center">
           <p className="text-sm font-bold tracking-wide text-foreground">
             Exam<span className="text-primary">Flow</span>OS
           </p>
-          <p className="mt-1 text-[10px] text-muted-foreground">
-            Created by imdvichrn
-          </p>
-          <p className="mt-2 text-[10px] text-muted-foreground/60">
-            v1.0 • Offline-first • All data stored locally
-          </p>
+          <p className="mt-1 text-[10px] text-muted-foreground">Created by imdvichrn</p>
+          <p className="mt-2 text-[10px] text-muted-foreground/50">v1.0 • Offline-first • All data stored locally</p>
         </div>
       </div>
 
@@ -229,13 +247,13 @@ export default function SettingsPage() {
               <div className="mt-5 flex gap-3">
                 <button
                   onClick={() => setShowClearConfirm(false)}
-                  className="flex-1 min-h-[44px] rounded-lg border border-border text-xs text-muted-foreground"
+                  className="flex-1 min-h-[44px] rounded-lg border border-border text-xs text-muted-foreground transition-colors active:bg-secondary"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={clearData}
-                  className="flex-1 min-h-[44px] rounded-lg bg-destructive text-xs font-medium text-destructive-foreground"
+                  className="flex-1 min-h-[44px] rounded-lg bg-destructive text-xs font-medium text-destructive-foreground transition-colors active:opacity-90"
                 >
                   Clear All
                 </button>
@@ -250,13 +268,39 @@ export default function SettingsPage() {
 
 // --- Sub-components ---
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function AccordionSection({ icon, title, open, onToggle, children }: {
+  icon: React.ReactNode; title: string; open: boolean; onToggle: () => void; children: React.ReactNode;
+}) {
   return (
-    <div className="rounded-lg border border-border bg-card overflow-hidden">
-      <div className="px-4 py-3 border-b border-border">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</h2>
-      </div>
-      <div className="divide-y divide-border px-4">{children}</div>
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <button
+        onClick={onToggle}
+        className="flex w-full items-center gap-3 px-4 py-3.5 min-h-[52px] text-left transition-colors active:bg-secondary/50"
+      >
+        <span className="text-muted-foreground">{icon}</span>
+        <span className="flex-1 text-sm font-medium text-foreground">{title}</span>
+        <motion.div
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+        </motion.div>
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-border divide-y divide-border/50 px-4">
+              {children}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
