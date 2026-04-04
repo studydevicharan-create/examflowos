@@ -37,6 +37,12 @@ const DEFAULTS: AppSettings = {
   accentColor: 'blue',
   fontSize: 'medium',
   reduceAnimations: false,
+  focusBackground: 'breathing',
+  focusIntensity: 'low',
+  focusLockIn: true,
+  notifyReminders: true,
+  notifyStreak: true,
+  notifyExamMode: false,
 };
 
 export function getSettings(): AppSettings {
