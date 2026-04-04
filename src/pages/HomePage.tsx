@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Plus, Brain, TrendingUp } from 'lucide-react';
 import { getSubjects, getFlashcards, getNodes, getNodeProgress, getDailyStats } from '@/lib/store';
 import FocusWidget from '@/components/FocusWidget';
+import HomeTooltip from '@/components/HomeTooltip';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -31,6 +32,8 @@ export default function HomePage() {
         </div>
         <p className="text-sm text-muted-foreground">Good {getGreeting()}. Stay focused.</p>
       </motion.div>
+
+      <HomeTooltip />
 
       {/* Quick Stats */}
       <div className="mt-6 grid grid-cols-3 gap-3">
