@@ -411,3 +411,18 @@ function SegmentedControl({ options, value, onChange }: { options: string[]; val
     </div>
   );
 }
+
+function SocialButton({ label, href, icon }: { label: string; href: string; icon: React.ReactNode }) {
+  return (
+    <motion.a
+      whileTap={{ scale: 0.96 }}
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-2 rounded-xl border border-border bg-secondary px-4 py-2.5 min-h-[44px] text-xs text-foreground transition-colors"
+    >
+      {icon}
+      {label}
+    </motion.a>
+  );
+}
