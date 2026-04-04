@@ -14,6 +14,14 @@ export interface AppSettings {
   fontSize: 'small' | 'medium' | 'large';
   // Performance
   reduceAnimations: boolean;
+  // Focus
+  focusBackground: 'breathing' | 'particles' | 'waves';
+  focusIntensity: 'low' | 'medium';
+  focusLockIn: boolean;
+  // Notifications
+  notifyReminders: boolean;
+  notifyStreak: boolean;
+  notifyExamMode: boolean;
 }
 
 const SETTINGS_KEY = 'studyapp_settings';
