@@ -1,15 +1,17 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, X, Volume2 } from 'lucide-react';
+import { getSettings } from '@/lib/settings';
+import FocusBackground from '@/components/focus/FocusBackgrounds';
+import FocusOverlay from '@/components/focus/FocusOverlay';
+import { notifyFocusStart, notifyFocusEnd, notifyStreak } from '@/lib/focusNotifications';
 
 const PRESETS = [25, 45, 60] as const;
 const SOUNDS = ['None', 'White', 'Brown', 'Rain'] as const;
 type Sound = typeof SOUNDS[number];
 
-// Simple noise generators using Web Audio API
 function createNoise(ctx: AudioContext, type: Sound): AudioNode | null {
   if (type === 'None') return null;
-
   const bufferSize = 2 * ctx.sampleRate;
   const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
   const data = buffer.getChannelData(0);
@@ -34,7 +36,6 @@ function createNoise(ctx: AudioContext, type: Sound): AudioNode | null {
   const source = ctx.createBufferSource();
   source.buffer = buffer;
   source.loop = true;
-
   const gain = ctx.createGain();
   gain.gain.value = 0.15;
   source.connect(gain);
@@ -49,10 +50,13 @@ export default function FocusWidget() {
   const [sound, setSound] = useState<Sound>('None');
   const [running, setRunning] = useState(false);
   const [timeLeft, setTimeLeft] = useState(25 * 60);
+  const [done, setDone] = useState(false);
+  const [sessionCount, setSessionCount] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<AudioNode | null>(null);
-  const [done, setDone] = useState(false);
+
+  const settings = getSettings();
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
@@ -79,6 +83,7 @@ export default function FocusWidget() {
     setRunning(true);
     setDone(false);
     startAudio(sound);
+    if (settings.notifyReminders) notifyFocusStart();
   };
 
   const stopSession = useCallback(() => {
@@ -103,34 +108,36 @@ export default function FocusWidget() {
           setRunning(false);
           setDone(true);
           stopAudio();
-          // Haptic
           if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+          setSessionCount(c => {
+            const next = c + 1;
+            if (settings.notifyStreak && next > 1 && next % 2 === 0) {
+              notifyStreak(next);
+            }
+            return next;
+          });
+          if (settings.notifyReminders) notifyFocusEnd();
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [running, stopAudio]);
+  }, [running, stopAudio, settings.notifyReminders, settings.notifyStreak]);
 
-  // Update timeLeft when duration changes (only when not running)
   useEffect(() => {
     if (!running && !done) setTimeLeft(duration * 60);
   }, [duration, running, done]);
 
-  // Cleanup audio on unmount
   useEffect(() => () => stopAudio(), [stopAudio]);
 
-  // Sound change while running
   useEffect(() => {
-    if (running) {
-      startAudio(sound);
-    }
+    if (running) startAudio(sound);
   }, [sound, running, startAudio]);
 
   const progress = 1 - timeLeft / (duration * 60);
 
-  // Compact state
+  // Compact idle state
   if (!expanded && !running) {
     return (
       <motion.button
@@ -148,129 +155,139 @@ export default function FocusWidget() {
     );
   }
 
-  // Running mini-bar (collapsed while running)
+  // Running mini-bar
   if (!expanded && running) {
     return (
-      <motion.button
-        layout
-        onClick={() => setExpanded(true)}
-        whileTap={{ scale: 0.96 }}
-        className="fixed bottom-24 right-4 z-40 flex items-center gap-3 rounded-2xl border border-primary/30 bg-card px-4 py-3 shadow-lg"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.15 }}
-      >
-        {/* Mini progress ring */}
-        <svg width="28" height="28" viewBox="0 0 28 28" className="-rotate-90">
-          <circle cx="14" cy="14" r="11" fill="none" strokeWidth="2.5" className="stroke-muted" />
-          <circle cx="14" cy="14" r="11" fill="none" strokeWidth="2.5" className="stroke-primary"
-            strokeDasharray={`${2 * Math.PI * 11}`}
-            strokeDashoffset={`${2 * Math.PI * 11 * (1 - progress)}`}
-            strokeLinecap="round"
-          />
-        </svg>
-        <span className="text-base font-bold tabular-nums text-foreground">{formatTime(timeLeft)}</span>
-      </motion.button>
+      <>
+        {settings.focusLockIn && <FocusOverlay active />}
+        <motion.button
+          layout
+          onClick={() => setExpanded(true)}
+          whileTap={{ scale: 0.96 }}
+          className="fixed bottom-24 right-4 z-40 flex items-center gap-3 rounded-2xl border border-primary/30 bg-card px-4 py-3 shadow-lg"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.15 }}
+        >
+          <svg width="28" height="28" viewBox="0 0 28 28" className="-rotate-90">
+            <circle cx="14" cy="14" r="11" fill="none" strokeWidth="2.5" className="stroke-muted" />
+            <circle cx="14" cy="14" r="11" fill="none" strokeWidth="2.5" className="stroke-primary"
+              strokeDasharray={`${2 * Math.PI * 11}`}
+              strokeDashoffset={`${2 * Math.PI * 11 * (1 - progress)}`}
+              strokeLinecap="round"
+            />
+          </svg>
+          <span className="text-base font-bold tabular-nums text-foreground">{formatTime(timeLeft)}</span>
+        </motion.button>
+      </>
     );
   }
 
   // Expanded state
   return (
     <AnimatePresence>
+      {settings.focusLockIn && running && <FocusOverlay active />}
       <motion.div
         layout
-        className="fixed bottom-24 right-4 z-40 w-64 rounded-2xl border border-border bg-card p-4 shadow-xl"
+        className="fixed bottom-24 right-4 z-40 w-64 rounded-2xl border border-border bg-card overflow-hidden shadow-xl"
         initial={{ opacity: 0, scale: 0.9, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 10 }}
         transition={{ duration: 0.15 }}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Focus</span>
-          <button onClick={() => { if (!running) resetSession(); setExpanded(false); }} className="p-1 text-muted-foreground hover:text-foreground">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+        {/* Living background */}
+        {(running || done) && (
+          <FocusBackground
+            type={settings.focusBackground}
+            intensity={settings.focusIntensity}
+            progress={progress}
+            sound={sound}
+          />
+        )}
 
-        {/* Done state */}
-        {done && (
-          <div className="text-center py-4">
-            <p className="text-sm font-medium text-foreground mb-1">Good. Continue or break?</p>
-            <div className="flex gap-2 mt-3 justify-center">
-              <motion.button whileTap={{ scale: 0.96 }} onClick={startSession}
-                className="rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground">
-                Continue
-              </motion.button>
-              <motion.button whileTap={{ scale: 0.96 }} onClick={() => { resetSession(); setExpanded(false); }}
-                className="rounded-lg border border-border px-4 py-2 text-xs font-medium text-foreground">
-                Break
-              </motion.button>
-            </div>
+        <div className="relative p-4">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Focus</span>
+            <button onClick={() => { if (!running) resetSession(); setExpanded(false); }} className="p-1 text-muted-foreground hover:text-foreground">
+              <X className="h-4 w-4" />
+            </button>
           </div>
-        )}
 
-        {/* Timer display */}
-        {!done && (
-          <>
-            <div className="text-center mb-4">
-              <span className="text-4xl font-bold tabular-nums text-foreground">{formatTime(timeLeft)}</span>
-            </div>
-
-            {/* Presets (only when not running) */}
-            {!running && (
-              <div className="flex justify-center gap-2 mb-4">
-                {PRESETS.map(p => (
-                  <motion.button key={p} whileTap={{ scale: 0.96 }}
-                    onClick={() => setDuration(p)}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                      duration === p
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-muted-foreground'
-                    }`}
-                  >
-                    {p}m
-                  </motion.button>
-                ))}
-              </div>
-            )}
-
-            {/* Sound selector */}
-            <div className="flex items-center gap-2 mb-4">
-              <Volume2 className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-              <div className="flex gap-1.5 flex-1">
-                {SOUNDS.map(s => (
-                  <button key={s}
-                    onClick={() => setSound(s)}
-                    className={`flex-1 rounded-md px-1 py-1 text-[10px] font-medium transition-colors ${
-                      sound === s
-                        ? 'bg-primary/20 text-primary'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    {s}
-                  </button>
-                ))}
+          {/* Done state */}
+          {done && (
+            <div className="text-center py-4">
+              <p className="text-sm font-medium text-foreground mb-1">Good. Continue or break?</p>
+              <div className="flex gap-2 mt-3 justify-center">
+                <motion.button whileTap={{ scale: 0.96 }} onClick={startSession}
+                  className="rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground">
+                  Continue
+                </motion.button>
+                <motion.button whileTap={{ scale: 0.96 }} onClick={() => { resetSession(); setExpanded(false); }}
+                  className="rounded-lg border border-border px-4 py-2 text-xs font-medium text-foreground">
+                  Break
+                </motion.button>
               </div>
             </div>
+          )}
 
-            {/* Progress bar (when running) */}
-            {running && (
-              <div className="h-1 rounded-full bg-muted mb-4 overflow-hidden">
-                <motion.div className="h-full bg-primary rounded-full" style={{ width: `${progress * 100}%` }} />
+          {/* Timer */}
+          {!done && (
+            <>
+              <div className="text-center mb-4">
+                <span className="text-4xl font-bold tabular-nums text-foreground">{formatTime(timeLeft)}</span>
               </div>
-            )}
 
-            {/* Action button */}
-            <motion.button
-              whileTap={{ scale: 0.96 }}
-              onClick={() => running ? stopSession() : startSession()}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-medium text-primary-foreground"
-            >
-              {running ? <><Pause className="h-4 w-4" /> Pause</> : <><Play className="h-4 w-4" /> Start</>}
-            </motion.button>
-          </>
-        )}
+              {!running && (
+                <div className="flex justify-center gap-2 mb-4">
+                  {PRESETS.map(p => (
+                    <motion.button key={p} whileTap={{ scale: 0.96 }}
+                      onClick={() => setDuration(p)}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                        duration === p ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                      }`}
+                    >
+                      {p}m
+                    </motion.button>
+                  ))}
+                </div>
+              )}
+
+              {/* Sound */}
+              <div className="flex items-center gap-2 mb-4">
+                <Volume2 className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                <div className="flex gap-1.5 flex-1">
+                  {SOUNDS.map(s => (
+                    <button key={s}
+                      onClick={() => setSound(s)}
+                      className={`flex-1 rounded-md px-1 py-1 text-[10px] font-medium transition-colors ${
+                        sound === s ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              {running && (
+                <div className="h-1 rounded-full bg-muted mb-4 overflow-hidden">
+                  <motion.div className="h-full bg-primary rounded-full" style={{ width: `${progress * 100}%` }} />
+                </div>
+              )}
+
+              {/* Action */}
+              <motion.button
+                whileTap={{ scale: 0.96 }}
+                onClick={() => running ? stopSession() : startSession()}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-medium text-primary-foreground"
+              >
+                {running ? <><Pause className="h-4 w-4" /> Pause</> : <><Play className="h-4 w-4" /> Start</>}
+              </motion.button>
+            </>
+          )}
+        </div>
       </motion.div>
     </AnimatePresence>
   );
