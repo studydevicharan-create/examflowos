@@ -131,6 +131,12 @@ export default function TopicDetailPage() {
       </div>
 
       <div className="space-y-6 px-4 mt-4">
+        {/* Micro-guide for first-time users */}
+        {cards.length === 0 && (
+          <div className="rounded-lg bg-primary/5 border border-primary/10 px-4 py-2.5">
+            <p className="text-xs text-muted-foreground">Add a few cards. Then tap <span className="text-primary font-medium">Recall</span>.</p>
+          </div>
+        )}
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <button
             onClick={toggleComplete}

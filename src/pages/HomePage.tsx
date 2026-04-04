@@ -33,6 +33,8 @@ export default function HomePage() {
         <p className="text-sm text-muted-foreground">Good {getGreeting()}. Stay focused.</p>
       </motion.div>
 
+      <HomeTooltip />
+
       {/* Quick Stats */}
       <div className="mt-6 grid grid-cols-3 gap-3">
         <StatCard label="Due cards" value={dueCards} />

@@ -29,6 +29,7 @@ const App = () => {
       <TooltipProvider>
         <Sonner />
         {showSplash && <SplashScreen onDone={handleSplashDone} />}
+        {!showSplash && showOnboarding && <OnboardingFlow onDone={handleOnboardingDone} />}
         <BrowserRouter>
           <div className="mx-auto max-w-[768px]">
             <Routes>
