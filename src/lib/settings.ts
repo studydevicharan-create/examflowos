@@ -14,6 +14,14 @@ export interface AppSettings {
   fontSize: 'small' | 'medium' | 'large';
   // Performance
   reduceAnimations: boolean;
+  // Focus
+  focusBackground: 'breathing' | 'particles' | 'waves';
+  focusIntensity: 'low' | 'medium';
+  focusLockIn: boolean;
+  // Notifications
+  notifyReminders: boolean;
+  notifyStreak: boolean;
+  notifyExamMode: boolean;
 }
 
 const SETTINGS_KEY = 'studyapp_settings';
@@ -29,6 +37,12 @@ const DEFAULTS: AppSettings = {
   accentColor: 'blue',
   fontSize: 'medium',
   reduceAnimations: false,
+  focusBackground: 'breathing',
+  focusIntensity: 'low',
+  focusLockIn: true,
+  notifyReminders: true,
+  notifyStreak: true,
+  notifyExamMode: false,
 };
 
 export function getSettings(): AppSettings {

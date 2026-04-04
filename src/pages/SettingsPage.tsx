@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Download, Upload, AlertTriangle, ChevronDown, BookOpen, Palette, Zap, Database, Brain } from 'lucide-react';
+import { Trash2, Download, Upload, AlertTriangle, ChevronDown, BookOpen, Palette, Zap, Database, Brain, Focus, Bell } from 'lucide-react';
 import { getSettings, saveSettings, type AppSettings } from '@/lib/settings';
 
-type SectionKey = 'study' | 'flashcard' | 'appearance' | 'performance' | 'data' | null;
+type SectionKey = 'study' | 'flashcard' | 'appearance' | 'performance' | 'focus' | 'notifications' | 'data' | null;
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<AppSettings>(getSettings);
@@ -164,6 +164,42 @@ export default function SettingsPage() {
               onChange={v => update({ fontSize: v as AppSettings['fontSize'] })}
             />
           </Row>
+        </AccordionSection>
+
+        {/* FOCUS */}
+        <AccordionSection
+          icon={<Focus className="h-4 w-4" />}
+          title="Focus"
+          open={openSection === 'focus'}
+          onToggle={() => toggle('focus')}
+        >
+          <Row label="Background">
+            <SegmentedControl
+              options={['breathing', 'particles', 'waves']}
+              value={settings.focusBackground}
+              onChange={v => update({ focusBackground: v as AppSettings['focusBackground'] })}
+            />
+          </Row>
+          <Row label="Intensity">
+            <SegmentedControl
+              options={['low', 'medium']}
+              value={settings.focusIntensity}
+              onChange={v => update({ focusIntensity: v as AppSettings['focusIntensity'] })}
+            />
+          </Row>
+          <ToggleRow label="Lock-in mode" checked={settings.focusLockIn} onChange={v => update({ focusLockIn: v })} />
+        </AccordionSection>
+
+        {/* NOTIFICATIONS */}
+        <AccordionSection
+          icon={<Bell className="h-4 w-4" />}
+          title="Notifications"
+          open={openSection === 'notifications'}
+          onToggle={() => toggle('notifications')}
+        >
+          <ToggleRow label="Reminders" checked={settings.notifyReminders} onChange={v => update({ notifyReminders: v })} />
+          <ToggleRow label="Streak notifications" checked={settings.notifyStreak} onChange={v => update({ notifyStreak: v })} />
+          <ToggleRow label="Exam mode alerts" checked={settings.notifyExamMode} onChange={v => update({ notifyExamMode: v })} />
         </AccordionSection>
 
         {/* PERFORMANCE */}
