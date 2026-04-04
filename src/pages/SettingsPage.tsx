@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Download, Upload, AlertTriangle, ChevronDown, BookOpen, Palette, Zap, Database, Brain } from 'lucide-react';
+import { Trash2, Download, Upload, AlertTriangle, ChevronDown, BookOpen, Palette, Zap, Database, Brain, Focus, Bell } from 'lucide-react';
 import { getSettings, saveSettings, type AppSettings } from '@/lib/settings';
 
 type SectionKey = 'study' | 'flashcard' | 'appearance' | 'performance' | 'data' | null;
