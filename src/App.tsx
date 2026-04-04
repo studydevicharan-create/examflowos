@@ -20,7 +20,9 @@ const queryClient = new QueryClient();
 
 const App = () => {
   const [showSplash, setShowSplash] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(() => !hasSeenOnboarding());
   const handleSplashDone = useCallback(() => setShowSplash(false), []);
+  const handleOnboardingDone = useCallback(() => setShowOnboarding(false), []);
 
   return (
     <QueryClientProvider client={queryClient}>
