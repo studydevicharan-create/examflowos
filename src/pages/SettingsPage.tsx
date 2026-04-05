@@ -525,7 +525,7 @@ function StudySystemContent() {
   );
 }
 
-
+function SocialButton({ label, href, icon }: { label: string; href: string; icon: React.ReactNode }) {
   return (
     <motion.a
       whileTap={{ scale: 0.96 }}
