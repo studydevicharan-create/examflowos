@@ -158,6 +158,7 @@ export function deleteFlashcard(id: string) {
 }
 
 // Review: quality 0=skip, 1=hard, 3=easy
+// Smart Repeat Timing: easy=longer gaps, hard=much shorter
 export function reviewCard(cardId: string, quality: number) {
   const cards = getFlashcards();
   const card = cards.find(c => c.id === cardId);
@@ -168,24 +169,40 @@ export function reviewCard(cardId: string, quality: number) {
   if (quality >= 3) {
     card.easeCount++;
     if (card.repetitions === 0) card.interval = 1;
-    else if (card.repetitions === 1) card.interval = 6;
+    else if (card.repetitions === 1) card.interval = 3;
     else card.interval = Math.round(card.interval * card.easeFactor);
     card.repetitions++;
-    card.easeFactor = Math.max(1.3, card.easeFactor + 0.1);
+    card.easeFactor = Math.max(1.3, card.easeFactor + 0.15);
   } else if (quality === 1) {
     card.hardCount++;
     card.repetitions = 0;
-    card.interval = 1;
+    // Hard cards reappear much sooner (hours not days)
+    card.interval = 0; // same day
     card.easeFactor = Math.max(1.3, card.easeFactor - 0.2);
   } else {
     card.skipCount++;
   }
 
   const next = new Date();
-  next.setDate(next.getDate() + card.interval);
+  if (quality === 1) {
+    // Hard: show again in 2 hours
+    next.setHours(next.getHours() + 2);
+  } else {
+    next.setDate(next.getDate() + card.interval);
+  }
   card.nextReview = next.toISOString();
 
   saveFlashcards(cards);
+}
+
+// Update subject exam date
+export function updateSubjectExamDate(subjectId: string, examDate: string | null) {
+  const subjects = getSubjects();
+  const idx = subjects.findIndex(s => s.id === subjectId);
+  if (idx !== -1) {
+    subjects[idx] = { ...subjects[idx], examDate };
+    saveSubjects(subjects);
+  }
 }
 
 // Weak detection: hardCount > easeCount
