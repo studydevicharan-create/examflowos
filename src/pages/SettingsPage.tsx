@@ -444,7 +444,7 @@ function StudySystemContent() {
         'Dual Coding — Combine words with visuals',
         'Concrete Examples — Link abstract ideas to real cases',
         'The Feynman Technique — Teach it to simplify it',
-        'Metacognition — Monitor what you know vs. don't',
+        "Metacognition — Monitor what you know vs. what you don\u2019t",
       ],
     },
     {
