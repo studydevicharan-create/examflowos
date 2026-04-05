@@ -33,7 +33,7 @@ export function saveSubjects(subjects: Subject[]) {
 export function addSubject(title: string, color: string): Subject {
   const id = uuidv4();
   const rootNodeId = uuidv4();
-  const subject: Subject = { id, title, color, rootNodeId, createdAt: new Date().toISOString(), lastStudied: null };
+  const subject: Subject = { id, title, color, rootNodeId, createdAt: new Date().toISOString(), lastStudied: null, examDate: null };
   const rootNode: SyllabusNode = {
     id: rootNodeId, parentId: null, subjectId: id, title, depth: 0,
     completed: false, important: false, notes: '', lastRevised: null,
@@ -131,9 +131,9 @@ export function saveFlashcards(cards: Flashcard[]) {
   save(KEYS.flashcards, cards);
 }
 
-export function addFlashcard(topicId: string, subjectId: string, prompt: string, reveal: string, image: string = '', type: 'text' | 'image' = 'text'): Flashcard {
+export function addFlashcard(topicId: string, subjectId: string, prompt: string, reveal: string, image: string = '', type: 'text' | 'image' = 'text', hint: string = ''): Flashcard {
   const card: Flashcard = {
-    id: uuidv4(), topicId, subjectId, type, prompt, reveal, image,
+    id: uuidv4(), topicId, subjectId, type, prompt, reveal, hint, image,
     easeCount: 0, hardCount: 0, skipCount: 0,
     lastSeen: null, easeFactor: 2.5, interval: 1,
     repetitions: 0, nextReview: new Date().toISOString(),
