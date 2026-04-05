@@ -14,6 +14,7 @@ export default function TopicDetailPage() {
   const [cardPrompt, setCardPrompt] = useState('');
   const [cardReveal, setCardReveal] = useState('');
   const [cardImage, setCardImage] = useState('');
+  const [cardHint, setCardHint] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Edit/delete state
@@ -56,7 +57,7 @@ export default function TopicDetailPage() {
     if (cardType === 'text' && !cardPrompt.trim()) return;
     if (cardType === 'image' && !cardImage) return;
 
-    addFlashcard(nodeId, node.subjectId, cardPrompt.trim(), cardReveal.trim(), cardImage, cardType);
+    addFlashcard(nodeId, node.subjectId, cardPrompt.trim(), cardReveal.trim(), cardImage, cardType, cardHint.trim());
     resetCardForm();
     refresh();
   };
@@ -69,6 +70,7 @@ export default function TopicDetailPage() {
     updateFlashcard(editingCard.id, {
       prompt: cardPrompt.trim(),
       reveal: cardReveal.trim(),
+      hint: cardHint.trim(),
       image: cardImage || editingCard.image,
       type: cardType,
     });
@@ -88,6 +90,7 @@ export default function TopicDetailPage() {
     setCardType(card.type);
     setCardPrompt(card.prompt);
     setCardReveal(card.reveal);
+    setCardHint(card.hint || '');
     setCardImage(card.image);
     setCardMenuOpen(null);
     setShowAddCard(true);
@@ -96,6 +99,7 @@ export default function TopicDetailPage() {
   const resetCardForm = () => {
     setCardPrompt('');
     setCardReveal('');
+    setCardHint('');
     setCardImage('');
     setCardType('text');
     setShowAddCard(false);
@@ -423,6 +427,19 @@ export default function TopicDetailPage() {
                     placeholder="Short explanation or key points"
                     rows={2}
                     className="w-full rounded-lg border border-border bg-secondary px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary resize-none"
+                  />
+                </div>
+
+                {/* Hint (micro hint) */}
+                <div>
+                  <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                    Hint (optional)
+                  </label>
+                  <input
+                    value={cardHint}
+                    onChange={e => setCardHint(e.target.value)}
+                    placeholder="e.g. Starts with E…"
+                    className="w-full rounded-lg border border-border bg-secondary px-4 py-3 min-h-[44px] text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
               </div>
