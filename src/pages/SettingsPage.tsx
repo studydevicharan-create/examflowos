@@ -422,7 +422,110 @@ function SegmentedControl({ options, value, onChange }: { options: string[]; val
   );
 }
 
-function SocialButton({ label, href, icon }: { label: string; href: string; icon: React.ReactNode }) {
+function StudySystemContent() {
+  const sections = [
+    {
+      title: 'Why most studying fails',
+      points: [
+        'Reading ≠ remembering',
+        'Re-reading gives false confidence',
+        'No testing = no real memory',
+      ],
+    },
+    {
+      title: 'What actually works',
+      points: [
+        'Active Recall — Ask → think → answer',
+        'Spaced Repetition — Review at the right time',
+        'Focus Sessions — Deep work in timed blocks',
+        'Retrieval Practice — Test yourself before checking',
+        'Interleaving — Mix different topics in one session',
+        'Elaboration — Explain concepts in your own words',
+        'Dual Coding — Combine words with visuals',
+        'Concrete Examples — Link abstract ideas to real cases',
+        'The Feynman Technique — Teach it to simplify it',
+        'Metacognition — Monitor what you know vs. don't',
+      ],
+    },
+    {
+      title: 'Why this method is powerful',
+      points: [
+        'Brain strengthens pathways when retrieving',
+        'Struggle = memory formation',
+        'Fast recall under pressure = exam success',
+        'Spacing prevents forgetting curves',
+      ],
+    },
+    {
+      title: 'How to use ExamFlowOS',
+      points: [
+        '1. Add a subject → break into topics',
+        '2. Add 3–5 cards per topic',
+        '3. Tap Recall → test yourself',
+        '4. Mark weak cards honestly',
+        '5. Repeat weak cards until strong',
+      ],
+    },
+    {
+      title: 'Does this actually work?',
+      points: [
+        'Used by top students worldwide',
+        'Based on 50+ years of memory science',
+        'Same method behind Anki, SuperMemo, Leitner',
+        'Proven in peer-reviewed cognitive research',
+      ],
+    },
+    {
+      title: 'Follow this',
+      points: [
+        "Don't read — recall",
+        'Keep cards short and specific',
+        'Focus on weak, not what you already know',
+        'Repeat daily, even 10 minutes',
+      ],
+    },
+  ];
+
+  const [openIdx, setOpenIdx] = useState<number | null>(null);
+
+  return (
+    <div className="py-2 space-y-1">
+      {sections.map((s, i) => (
+        <div key={i}>
+          <button
+            onClick={() => setOpenIdx(openIdx === i ? null : i)}
+            className="flex w-full items-center justify-between py-2.5 min-h-[40px] text-left"
+          >
+            <span className="text-xs font-medium text-foreground">{s.title}</span>
+            <motion.div animate={{ rotate: openIdx === i ? 180 : 0 }} transition={{ duration: 0.15 }}>
+              <ChevronDown className="h-3 w-3 text-muted-foreground" />
+            </motion.div>
+          </button>
+          <AnimatePresence initial={false}>
+            {openIdx === i && (
+              <motion.ul
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="overflow-hidden space-y-1.5 pb-2"
+              >
+                {s.points.map((p, j) => (
+                  <li key={j} className="text-[11px] text-muted-foreground leading-relaxed pl-2 flex gap-2">
+                    <span className="text-primary mt-0.5">•</span>
+                    <span>{p}</span>
+                  </li>
+                ))}
+              </motion.ul>
+            )}
+          </AnimatePresence>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+
   return (
     <motion.a
       whileTap={{ scale: 0.96 }}
