@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Plus, X, ChevronRight, Check, Star, FileText, Brain } from 'lucide-react';
-import { getSubjects, getNodes, addChildNode, getNodeProgress, getFlashcards } from '@/lib/store';
+import { ArrowLeft, Plus, X, ChevronRight, Check, Star, FileText, Brain, Calendar } from 'lucide-react';
+import { getSubjects, getNodes, addChildNode, getNodeProgress, getFlashcards, updateSubjectExamDate } from '@/lib/store';
 
 export default function SubjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -51,8 +51,30 @@ export default function SubjectDetailPage() {
         </motion.button>
       </div>
 
+      {/* Exam date */}
+      <div className="mx-4 mt-2 flex items-center gap-2">
+        <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+        <input
+          type="date"
+          value={subject.examDate || ''}
+          onChange={e => {
+            updateSubjectExamDate(subject.id, e.target.value || null);
+          }}
+          className="flex-1 rounded-md border border-border bg-secondary px-2 py-1 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary"
+          placeholder="Set exam date"
+        />
+        {subject.examDate && (() => {
+          const days = Math.ceil((new Date(subject.examDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+          return (
+            <span className={`text-xs font-medium ${days <= 3 ? 'text-destructive' : days <= 7 ? 'text-warning' : 'text-muted-foreground'}`}>
+              {days <= 0 ? 'Today!' : `${days}d left`}
+            </span>
+          );
+        })()}
+      </div>
+
       {/* Progress bar */}
-      <div className="mx-4 h-1 overflow-hidden rounded-full bg-muted">
+      <div className="mx-4 mt-3 h-1 overflow-hidden rounded-full bg-muted">
         <motion.div
           className="h-full rounded-full bg-primary"
           animate={{ width: `${progress}%` }}

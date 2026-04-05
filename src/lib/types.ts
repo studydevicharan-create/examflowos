@@ -22,6 +22,7 @@ export interface Flashcard {
   type: CardType;
   prompt: string;
   reveal: string;
+  hint: string;
   image: string; // base64 data URL for image cards, empty for text
   // Tracking
   easeCount: number;
@@ -42,6 +43,7 @@ export interface Subject {
   rootNodeId: string;
   createdAt: string;
   lastStudied: string | null;
+  examDate: string | null;
 }
 
 export interface DailyStats {
