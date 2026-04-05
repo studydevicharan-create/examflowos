@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
-import { FileText, ZoomIn, ZoomOut } from 'lucide-react';
+import { FileText, ZoomIn, ZoomOut, Lightbulb } from 'lucide-react';
 import type { Flashcard } from '@/lib/types';
 
 interface Props {
@@ -14,6 +14,7 @@ interface Props {
 }
 
 export default function FlashcardView({ card, onEasy, onHard, onSkip, onOpenNotes, current, total }: Props) {
+  const [hintShown, setHintShown] = useState(false);
   const [revealed, setRevealed] = useState(false);
   const [zoomed, setZoomed] = useState(false);
   const x = useMotionValue(0);
@@ -25,15 +26,17 @@ export default function FlashcardView({ card, onEasy, onHard, onSkip, onOpenNote
   const isImage = card.type === 'image' && card.image;
   const hasReveal = card.reveal && card.reveal.trim().length > 0;
   const hasPrompt = card.prompt && card.prompt.trim().length > 0;
+  const hasHint = card.hint && card.hint.trim().length > 0;
 
   const resetAndAdvance = useCallback((action: () => void) => {
     setRevealed(false);
+    setHintShown(false);
     setZoomed(false);
     action();
   }, []);
 
   const handleDragEnd = useCallback((_: unknown, info: { offset: { x: number; y: number } }) => {
-    if (zoomed) return; // Don't swipe while zoomed
+    if (zoomed) return;
     if (info.offset.x > 80) {
       setFlash('easy');
       setTimeout(() => { setFlash(null); resetAndAdvance(onEasy); }, 200);
@@ -50,6 +53,15 @@ export default function FlashcardView({ card, onEasy, onHard, onSkip, onOpenNote
     easy: 'bg-success/20',
     hard: 'bg-destructive/20',
     skip: 'bg-muted/30',
+  };
+
+  const handleRevealTap = () => {
+    // Micro hint: if hint exists and not shown yet, show hint first
+    if (hasHint && !hintShown) {
+      setHintShown(true);
+      return;
+    }
+    setRevealed(true);
   };
 
   return (
@@ -133,6 +145,21 @@ export default function FlashcardView({ card, onEasy, onHard, onSkip, onOpenNote
             </div>
           )}
 
+          {/* Micro Hint */}
+          <AnimatePresence>
+            {hintShown && !revealed && (
+              <motion.div
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="mt-4 flex items-center gap-1.5 rounded-lg bg-primary/5 border border-primary/10 px-3 py-2"
+              >
+                <Lightbulb className="h-3 w-3 text-primary/60 flex-shrink-0" />
+                <p className="text-xs text-primary/80">{card.hint}</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Reveal section */}
           <AnimatePresence>
             {revealed && (
@@ -169,13 +196,13 @@ export default function FlashcardView({ card, onEasy, onHard, onSkip, onOpenNote
             )}
           </AnimatePresence>
 
-          {/* Tap to reveal */}
+          {/* Tap to reveal (with hint step) */}
           {!revealed && (
             <button
-              onClick={(e) => { e.stopPropagation(); setRevealed(true); }}
+              onClick={(e) => { e.stopPropagation(); handleRevealTap(); }}
               className="mt-6 text-xs text-primary/70 transition-colors hover:text-primary"
             >
-              Tap to reveal
+              {hasHint && !hintShown ? 'Tap for hint' : 'Tap to reveal'}
             </button>
           )}
         </motion.div>

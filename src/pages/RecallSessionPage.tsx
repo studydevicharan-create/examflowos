@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Check, Brain } from 'lucide-react';
+import { ArrowLeft, Check, Brain, RotateCcw } from 'lucide-react';
 import FlashcardView from '@/components/FlashcardView';
 import { getCardsForReview, reviewCard, updateDailyStats } from '@/lib/store';
-import type { RecallMode } from '@/lib/types';
+import type { RecallMode, Flashcard } from '@/lib/types';
 
 export default function RecallSessionPage() {
   const [params] = useSearchParams();
@@ -15,8 +15,10 @@ export default function RecallSessionPage() {
 
   const [cards] = useState(() => getCardsForReview(mode, subjectId, topicId));
   const [index, setIndex] = useState(0);
-  const [phase, setPhase] = useState<'prerecall' | 'active' | 'done'>('prerecall');
+  const [phase, setPhase] = useState<'prerecall' | 'active' | 'done' | 'mistakes'>('prerecall');
   const [sessionStats, setSessionStats] = useState({ easy: 0, hard: 0, skip: 0 });
+  const [mistakeCards, setMistakeCards] = useState<Flashcard[]>([]);
+  const [mistakeIndex, setMistakeIndex] = useState(0);
 
   const advance = useCallback(() => {
     if (index + 1 >= cards.length) {
@@ -37,12 +39,14 @@ export default function RecallSessionPage() {
     reviewCard(cards[index].id, 1);
     updateDailyStats(1, false);
     setSessionStats(s => ({ ...s, hard: s.hard + 1 }));
+    setMistakeCards(prev => [...prev, cards[index]]);
     advance();
   }, [cards, index, advance]);
 
   const handleSkip = useCallback(() => {
     reviewCard(cards[index].id, 0);
     setSessionStats(s => ({ ...s, skip: s.skip + 1 }));
+    setMistakeCards(prev => [...prev, cards[index]]);
     advance();
   }, [cards, index, advance]);
 
@@ -50,6 +54,36 @@ export default function RecallSessionPage() {
     const card = cards[index];
     if (card) navigate(`/topic/${card.topicId}`);
   }, [cards, index, navigate]);
+
+  // Mistake replay handlers
+  const handleMistakeEasy = useCallback(() => {
+    reviewCard(mistakeCards[mistakeIndex].id, 3);
+    if (mistakeIndex + 1 >= mistakeCards.length) {
+      setPhase('done');
+      setMistakeCards([]);
+    } else {
+      setMistakeIndex(i => i + 1);
+    }
+  }, [mistakeCards, mistakeIndex]);
+
+  const handleMistakeHard = useCallback(() => {
+    reviewCard(mistakeCards[mistakeIndex].id, 1);
+    if (mistakeIndex + 1 >= mistakeCards.length) {
+      setPhase('done');
+      setMistakeCards([]);
+    } else {
+      setMistakeIndex(i => i + 1);
+    }
+  }, [mistakeCards, mistakeIndex]);
+
+  const handleMistakeSkip = useCallback(() => {
+    if (mistakeIndex + 1 >= mistakeCards.length) {
+      setPhase('done');
+      setMistakeCards([]);
+    } else {
+      setMistakeIndex(i => i + 1);
+    }
+  }, [mistakeCards, mistakeIndex]);
 
   if (cards.length === 0) {
     return (
@@ -96,6 +130,28 @@ export default function RecallSessionPage() {
     );
   }
 
+  // Mistake replay phase
+  if (phase === 'mistakes') {
+    return (
+      <div className="flex min-h-screen flex-col pt-4">
+        <div className="flex items-center gap-3 px-4 py-2">
+          <button onClick={() => { setPhase('done'); setMistakeCards([]); }} className="text-muted-foreground">
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <span className="text-sm text-muted-foreground">Reviewing mistakes</span>
+        </div>
+        <FlashcardView
+          card={mistakeCards[mistakeIndex]}
+          onEasy={handleMistakeEasy}
+          onHard={handleMistakeHard}
+          onSkip={handleMistakeSkip}
+          current={mistakeIndex + 1}
+          total={mistakeCards.length}
+        />
+      </div>
+    );
+  }
+
   // Done screen
   if (phase === 'done') {
     const total = sessionStats.easy + sessionStats.hard + sessionStats.skip;
@@ -122,9 +178,37 @@ export default function RecallSessionPage() {
             </div>
           </div>
           <p className="mt-3 text-sm text-muted-foreground">Accuracy: {accuracy}%</p>
-          <button onClick={() => navigate('/recall')} className="mt-6 rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground">
-            Done
-          </button>
+
+          {/* Session Memory Boost */}
+          {total > 0 && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="mt-2 text-xs text-primary/70"
+            >
+              ✔ {total} cards reviewed{sessionStats.easy > 0 && ` • ${sessionStats.easy} nailed`}
+            </motion.p>
+          )}
+
+          <div className="mt-6 flex flex-col gap-3">
+            {/* Last Mistake Replay */}
+            {mistakeCards.length > 0 && (
+              <motion.button
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                onClick={() => { setMistakeIndex(0); setPhase('mistakes'); }}
+                className="flex items-center justify-center gap-2 rounded-lg border border-destructive/30 px-6 py-3 text-sm font-medium text-destructive"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Review {mistakeCards.length} mistake{mistakeCards.length !== 1 ? 's' : ''}
+              </motion.button>
+            )}
+            <button onClick={() => navigate('/recall')} className="rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground">
+              Done
+            </button>
+          </div>
         </motion.div>
       </div>
     );
