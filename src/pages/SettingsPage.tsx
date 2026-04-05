@@ -244,6 +244,16 @@ export default function SettingsPage() {
           </button>
         </AccordionSection>
 
+        {/* STUDY SYSTEM */}
+        <AccordionSection
+          icon={<GraduationCap className="h-4 w-4" />}
+          title="Study System"
+          open={openSection === 'studysystem'}
+          onToggle={() => toggle('studysystem')}
+        >
+          <StudySystemContent />
+        </AccordionSection>
+
         {/* About + Social */}
         <div className="mt-4 rounded-xl border border-border bg-card p-5 flex flex-col items-center">
           {/* Avatar */}
