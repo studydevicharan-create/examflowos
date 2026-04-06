@@ -173,26 +173,20 @@ export default function SettingsPage() {
           open={openSection === 'focus'}
           onToggle={() => toggle('focus')}
         >
-          <Row label="Duration">
-            <div className="flex rounded-lg border border-border overflow-hidden">
-              {[25, 45, 60, 90].map(m => (
-                <button
-                  key={m}
-                  onClick={() => update({ focusDuration: m })}
-                  className={`min-h-[36px] px-3 py-1.5 text-[11px] transition-colors ${
-                    settings.focusDuration === m ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
-                  }`}
-                >
-                  {m}m
-                </button>
-              ))}
-            </div>
+          <Row label="Focus Duration" description={`${settings.focusDuration} min`}>
+            <ScrollPicker
+              values={Array.from({ length: 17 }, (_, i) => 10 + i * 5)}
+              value={settings.focusDuration}
+              onChange={v => update({ focusDuration: v })}
+              suffix="min"
+            />
           </Row>
-          <Row label="Break Duration">
-            <SegmentedControl
-              options={['2', '5', '10']}
-              value={String(settings.focusBreakDuration)}
-              onChange={v => update({ focusBreakDuration: Number(v) })}
+          <Row label="Break Duration" description={`${settings.focusBreakDuration} min`}>
+            <ScrollPicker
+              values={Array.from({ length: 15 }, (_, i) => i + 1)}
+              value={settings.focusBreakDuration}
+              onChange={v => update({ focusBreakDuration: v })}
+              suffix="min"
             />
           </Row>
           <Row label="Sound">
@@ -287,7 +281,7 @@ export default function SettingsPage() {
         {/* About + Social */}
         <div className="mt-4 rounded-xl border border-border bg-card p-5 flex flex-col items-center">
           {/* Avatar */}
-          <div className="h-16 w-16 rounded-full bg-secondary flex items-center justify-center text-lg font-bold text-primary">
+          <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center text-lg font-bold text-primary">
             dv
           </div>
           <p className="mt-3 text-sm font-bold tracking-wide text-foreground">
@@ -299,13 +293,13 @@ export default function SettingsPage() {
           {/* Social Links */}
           <div className="mt-4 flex gap-2">
             <SocialButton label="X" href="https://x.com/imdvichrn" icon={
-              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-current"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
             } />
             <SocialButton label="Instagram" href="https://instagram.com/imdvichrn" icon={
-              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-current"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+              <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
             } />
             <SocialButton label="Portfolio" href="https://geddadadevicharan.netlify.app" icon={
-              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-current"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+              <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
             } />
           </div>
 
@@ -452,6 +446,56 @@ function SegmentedControl({ options, value, onChange }: { options: string[]; val
   );
 }
 
+function ScrollPicker({ values, value, onChange, suffix = '' }: {
+  values: number[];
+  value: number;
+  onChange: (v: number) => void;
+  suffix?: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 min-h-[36px] rounded-lg border border-border bg-secondary px-3 py-1.5 text-xs text-foreground"
+      >
+        <span className="tabular-nums font-medium">{value}</span>
+        <span className="text-muted-foreground">{suffix}</span>
+        <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.15 }}>
+          <ChevronDown className="h-3 w-3 text-muted-foreground" />
+        </motion.div>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.12 }}
+            className="absolute right-0 top-full mt-1 z-50 max-h-40 w-24 overflow-y-auto rounded-lg border border-border bg-card shadow-xl scroll-smooth"
+            style={{ scrollbarWidth: 'thin' }}
+          >
+            {values.map(v => (
+              <button
+                key={v}
+                onClick={() => { onChange(v); setOpen(false); }}
+                className={`flex w-full items-center justify-center py-2 text-xs transition-colors ${
+                  v === value
+                    ? 'bg-primary text-primary-foreground font-medium'
+                    : 'text-foreground hover:bg-secondary'
+                }`}
+              >
+                {v} {suffix}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 function StudySystemContent() {
   const sections = [
     {
@@ -558,13 +602,14 @@ function StudySystemContent() {
 function SocialButton({ label, href, icon }: { label: string; href: string; icon: React.ReactNode }) {
   return (
     <motion.a
-      whileTap={{ scale: 0.96 }}
+      whileTap={{ scale: 0.94 }}
+      whileHover={{ scale: 1.04 }}
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center gap-2 rounded-xl border border-border bg-secondary px-4 py-2.5 min-h-[44px] text-xs text-foreground transition-colors"
+      className="flex items-center gap-2 rounded-xl border border-border bg-secondary/80 px-4 py-2.5 min-h-[44px] text-xs font-medium text-foreground transition-all hover:border-primary/30 hover:bg-secondary"
     >
-      {icon}
+      <span className="text-primary">{icon}</span>
       {label}
     </motion.a>
   );

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Plus, Brain, TrendingUp, Calendar } from 'lucide-react';
 import { getSubjects, getFlashcards, getNodes, getNodeProgress, getDailyStats } from '@/lib/store';
-import FocusWidget from '@/components/FocusWidget';
+
 import HomeTooltip from '@/components/HomeTooltip';
 
 export default function HomePage() {
@@ -136,7 +136,7 @@ export default function HomePage() {
           </button>
         </div>
       )}
-      <FocusWidget />
+      
     </div>
   );
 }

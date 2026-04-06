@@ -6,6 +6,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import BottomNav from "@/components/BottomNav";
 import SplashScreen from "@/components/SplashScreen";
 import OnboardingFlow, { hasSeenOnboarding } from "@/components/OnboardingFlow";
+import FocusWidget from "@/components/FocusWidget";
+import { FocusProvider } from "@/lib/focusContext";
 import HomePage from "./pages/HomePage";
 import SubjectsPage from "./pages/SubjectsPage";
 import SubjectDetailPage from "./pages/SubjectDetailPage";
@@ -27,25 +29,28 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Sonner />
-        {showSplash && <SplashScreen onDone={handleSplashDone} />}
-        {!showSplash && showOnboarding && <OnboardingFlow onDone={handleOnboardingDone} />}
-        <BrowserRouter>
-          <div className="mx-auto max-w-[768px]">
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/subjects" element={<SubjectsPage />} />
-              <Route path="/subjects/:id" element={<SubjectDetailPage />} />
-              <Route path="/topic/:nodeId" element={<TopicDetailPage />} />
-              <Route path="/recall" element={<RecallPage />} />
-              <Route path="/recall/session" element={<RecallSessionPage />} />
-              <Route path="/stats" element={<StatsPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <BottomNav />
-          </div>
-        </BrowserRouter>
+        <FocusProvider>
+          <Sonner />
+          {showSplash && <SplashScreen onDone={handleSplashDone} />}
+          {!showSplash && showOnboarding && <OnboardingFlow onDone={handleOnboardingDone} />}
+          <BrowserRouter>
+            <div className="mx-auto max-w-[768px]">
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/subjects" element={<SubjectsPage />} />
+                <Route path="/subjects/:id" element={<SubjectDetailPage />} />
+                <Route path="/topic/:nodeId" element={<TopicDetailPage />} />
+                <Route path="/recall" element={<RecallPage />} />
+                <Route path="/recall/session" element={<RecallSessionPage />} />
+                <Route path="/stats" element={<StatsPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <BottomNav />
+              <FocusWidget />
+            </div>
+          </BrowserRouter>
+        </FocusProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
