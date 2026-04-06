@@ -18,6 +18,10 @@ export interface AppSettings {
   focusBackground: 'breathing' | 'particles' | 'waves';
   focusIntensity: 'low' | 'medium';
   focusLockIn: boolean;
+  focusDuration: number;
+  focusBreakDuration: number;
+  focusSound: 'None' | 'White' | 'Brown' | 'Rain';
+  focusAutoNext: boolean;
   // Notifications
   notifyReminders: boolean;
   notifyStreak: boolean;
@@ -40,6 +44,10 @@ const DEFAULTS: AppSettings = {
   focusBackground: 'breathing',
   focusIntensity: 'low',
   focusLockIn: true,
+  focusDuration: 25,
+  focusBreakDuration: 5,
+  focusSound: 'None',
+  focusAutoNext: false,
   notifyReminders: true,
   notifyStreak: true,
   notifyExamMode: false,
