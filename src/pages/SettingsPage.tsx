@@ -446,6 +446,56 @@ function SegmentedControl({ options, value, onChange }: { options: string[]; val
   );
 }
 
+function ScrollPicker({ values, value, onChange, suffix = '' }: {
+  values: number[];
+  value: number;
+  onChange: (v: number) => void;
+  suffix?: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 min-h-[36px] rounded-lg border border-border bg-secondary px-3 py-1.5 text-xs text-foreground"
+      >
+        <span className="tabular-nums font-medium">{value}</span>
+        <span className="text-muted-foreground">{suffix}</span>
+        <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.15 }}>
+          <ChevronDown className="h-3 w-3 text-muted-foreground" />
+        </motion.div>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.12 }}
+            className="absolute right-0 top-full mt-1 z-50 max-h-40 w-24 overflow-y-auto rounded-lg border border-border bg-card shadow-xl scroll-smooth"
+            style={{ scrollbarWidth: 'thin' }}
+          >
+            {values.map(v => (
+              <button
+                key={v}
+                onClick={() => { onChange(v); setOpen(false); }}
+                className={`flex w-full items-center justify-center py-2 text-xs transition-colors ${
+                  v === value
+                    ? 'bg-primary text-primary-foreground font-medium'
+                    : 'text-foreground hover:bg-secondary'
+                }`}
+              >
+                {v} {suffix}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 function StudySystemContent() {
   const sections = [
     {
