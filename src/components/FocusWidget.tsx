@@ -5,12 +5,11 @@ import { getSettings } from '@/lib/settings';
 import FocusBackground from '@/components/focus/FocusBackgrounds';
 import FocusOverlay from '@/components/focus/FocusOverlay';
 import { notifyFocusStart, notifyFocusEnd, notifyStreak } from '@/lib/focusNotifications';
+import { getBreakAction, type BreakAction } from '@/lib/breakActions';
 
-const PRESETS = [25, 45, 60] as const;
-const SOUNDS = ['None', 'White', 'Brown', 'Rain'] as const;
-type Sound = typeof SOUNDS[number];
+type Phase = 'idle' | 'focus' | 'paused' | 'done' | 'break';
 
-function createNoise(ctx: AudioContext, type: Sound): AudioNode | null {
+function createNoise(ctx: AudioContext, type: string): { source: AudioBufferSourceNode; gain: GainNode } | null {
   if (type === 'None') return null;
   const bufferSize = 2 * ctx.sampleRate;
   const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -37,26 +36,29 @@ function createNoise(ctx: AudioContext, type: Sound): AudioNode | null {
   source.buffer = buffer;
   source.loop = true;
   const gain = ctx.createGain();
-  gain.gain.value = 0.15;
+  gain.gain.value = 0;
   source.connect(gain);
   gain.connect(ctx.destination);
   source.start();
-  return source;
+  // Fade in over 2s
+  gain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + 2);
+  return { source, gain };
 }
 
 export default function FocusWidget() {
   const [expanded, setExpanded] = useState(false);
-  const [duration, setDuration] = useState(25);
-  const [sound, setSound] = useState<Sound>('None');
-  const [running, setRunning] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(25 * 60);
-  const [done, setDone] = useState(false);
+  const [phase, setPhase] = useState<Phase>('idle');
+  const [timeLeft, setTimeLeft] = useState(0);
   const [sessionCount, setSessionCount] = useState(0);
+  const [breakAction, setBreakAction] = useState<BreakAction | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const sourceRef = useRef<AudioNode | null>(null);
+  const audioRef = useRef<{ source: AudioBufferSourceNode; gain: GainNode } | null>(null);
 
   const settings = getSettings();
+  const duration = settings.focusDuration;
+  const breakDuration = settings.focusBreakDuration;
+  const sound = settings.focusSound;
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
@@ -64,81 +66,105 @@ export default function FocusWidget() {
     return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
   };
 
-  const stopAudio = useCallback(() => {
-    if (sourceRef.current && 'stop' in sourceRef.current) {
-      (sourceRef.current as AudioBufferSourceNode).stop();
+  const stopAudio = useCallback((fade = false) => {
+    if (audioRef.current) {
+      const { source, gain } = audioRef.current;
+      if (fade && audioCtxRef.current) {
+        gain.gain.linearRampToValueAtTime(0, audioCtxRef.current.currentTime + 2);
+        setTimeout(() => { try { source.stop(); } catch {} }, 2100);
+      } else {
+        try { source.stop(); } catch {}
+      }
+      audioRef.current = null;
     }
-    sourceRef.current = null;
   }, []);
 
-  const startAudio = useCallback((s: Sound) => {
+  const startAudio = useCallback(() => {
     stopAudio();
-    if (s === 'None') return;
+    if (sound === 'None') return;
     if (!audioCtxRef.current) audioCtxRef.current = new AudioContext();
-    sourceRef.current = createNoise(audioCtxRef.current, s);
-  }, [stopAudio]);
+    audioRef.current = createNoise(audioCtxRef.current, sound);
+  }, [stopAudio, sound]);
 
-  const startSession = () => {
+  const clearTimer = useCallback(() => {
+    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+  }, []);
+
+  const startFocus = useCallback(() => {
     setTimeLeft(duration * 60);
-    setRunning(true);
-    setDone(false);
-    startAudio(sound);
+    setPhase('focus');
+    setBreakAction(null);
+    startAudio();
     if (settings.notifyReminders) notifyFocusStart();
-  };
+  }, [duration, startAudio, settings.notifyReminders]);
 
-  const stopSession = useCallback(() => {
-    setRunning(false);
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = null;
+  const pauseFocus = useCallback(() => {
+    clearTimer();
+    stopAudio(true);
+    setPhase('paused');
+  }, [clearTimer, stopAudio]);
+
+  const resumeFocus = useCallback(() => {
+    setPhase('focus');
+    startAudio();
+  }, [startAudio]);
+
+  const startBreak = useCallback(() => {
+    clearTimer();
+    stopAudio(true);
+    setBreakAction(getBreakAction(duration));
+    setTimeLeft(breakDuration * 60);
+    setPhase('break');
+    setSessionCount(c => {
+      const next = c + 1;
+      if (settings.notifyStreak && next > 1 && next % 2 === 0) notifyStreak(next);
+      return next;
+    });
+    if (settings.notifyReminders) notifyFocusEnd();
+  }, [clearTimer, stopAudio, duration, breakDuration, settings.notifyStreak, settings.notifyReminders]);
+
+  const resetAll = useCallback(() => {
+    clearTimer();
     stopAudio();
-  }, [stopAudio]);
-
-  const resetSession = useCallback(() => {
-    stopSession();
-    setTimeLeft(duration * 60);
-    setDone(false);
-  }, [stopSession, duration]);
+    setPhase('idle');
+    setTimeLeft(0);
+    setBreakAction(null);
+  }, [clearTimer, stopAudio]);
 
   // Timer tick
   useEffect(() => {
-    if (!running) return;
+    if (phase !== 'focus' && phase !== 'break') return;
     intervalRef.current = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
-          setRunning(false);
-          setDone(true);
-          stopAudio();
-          if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-          setSessionCount(c => {
-            const next = c + 1;
-            if (settings.notifyStreak && next > 1 && next % 2 === 0) {
-              notifyStreak(next);
+          clearTimer();
+          if (phase === 'focus') {
+            startBreak();
+          } else if (phase === 'break') {
+            if (settings.focusAutoNext) {
+              startFocus();
+            } else {
+              setPhase('done');
             }
-            return next;
-          });
-          if (settings.notifyReminders) notifyFocusEnd();
+          }
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [running, stopAudio, settings.notifyReminders, settings.notifyStreak]);
-
-  useEffect(() => {
-    if (!running && !done) setTimeLeft(duration * 60);
-  }, [duration, running, done]);
+    return clearTimer;
+  }, [phase, clearTimer, startBreak, startFocus, settings.focusAutoNext]);
 
   useEffect(() => () => stopAudio(), [stopAudio]);
 
-  useEffect(() => {
-    if (running) startAudio(sound);
-  }, [sound, running, startAudio]);
+  const progress = phase === 'focus' || phase === 'paused'
+    ? 1 - timeLeft / (duration * 60)
+    : phase === 'break'
+    ? 1 - timeLeft / (breakDuration * 60)
+    : 0;
 
-  const progress = 1 - timeLeft / (duration * 60);
-
-  // Compact idle state
-  if (!expanded && !running) {
+  // Compact idle
+  if (!expanded && phase === 'idle') {
     return (
       <motion.button
         layout
@@ -155,11 +181,11 @@ export default function FocusWidget() {
     );
   }
 
-  // Running mini-bar
-  if (!expanded && running) {
+  // Running/paused mini-bar
+  if (!expanded && (phase === 'focus' || phase === 'paused' || phase === 'break')) {
     return (
       <>
-        {settings.focusLockIn && <FocusOverlay active />}
+        {settings.focusLockIn && phase === 'focus' && <FocusOverlay active />}
         <motion.button
           layout
           onClick={() => setExpanded(true)}
@@ -178,6 +204,8 @@ export default function FocusWidget() {
             />
           </svg>
           <span className="text-base font-bold tabular-nums text-foreground">{formatTime(timeLeft)}</span>
+          {phase === 'paused' && <span className="text-[10px] text-muted-foreground">Paused</span>}
+          {phase === 'break' && <span className="text-[10px] text-primary">Break</span>}
         </motion.button>
       </>
     );
@@ -186,7 +214,7 @@ export default function FocusWidget() {
   // Expanded state
   return (
     <AnimatePresence>
-      {settings.focusLockIn && running && <FocusOverlay active />}
+      {settings.focusLockIn && phase === 'focus' && <FocusOverlay active />}
       <motion.div
         layout
         className="fixed bottom-24 right-4 z-40 w-64 rounded-2xl border border-border bg-card overflow-hidden shadow-xl"
@@ -196,7 +224,7 @@ export default function FocusWidget() {
         transition={{ duration: 0.15 }}
       >
         {/* Living background */}
-        {(running || done) && (
+        {(phase === 'focus' || phase === 'paused') && (
           <FocusBackground
             type={settings.focusBackground}
             intensity={settings.focusIntensity}
@@ -208,70 +236,68 @@ export default function FocusWidget() {
         <div className="relative p-4">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Focus</span>
-            <button onClick={() => { if (!running) resetSession(); setExpanded(false); }} className="p-1 text-muted-foreground hover:text-foreground">
+            <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+              {phase === 'break' ? 'Break' : phase === 'paused' ? 'Paused' : 'Focus'}
+            </span>
+            <button onClick={() => { if (phase === 'idle') { setExpanded(false); } else { resetAll(); setExpanded(false); } }} className="p-1 text-muted-foreground hover:text-foreground">
               <X className="h-4 w-4" />
             </button>
           </div>
 
+          {/* Break state */}
+          {phase === 'break' && (
+            <div className="text-center py-3">
+              <span className="text-2xl font-bold tabular-nums text-foreground">{formatTime(timeLeft)}</span>
+              {breakAction && (
+                <div className="mt-3 rounded-lg bg-secondary/60 px-3 py-2.5">
+                  <p className="text-[10px] uppercase tracking-wide text-primary font-semibold mb-1">Reset Action</p>
+                  <p className="text-xs text-foreground leading-relaxed">{breakAction.text}</p>
+                </div>
+              )}
+              <motion.button whileTap={{ scale: 0.96 }} onClick={startFocus}
+                className="mt-3 w-full rounded-xl bg-primary py-3 text-sm font-medium text-primary-foreground">
+                Back to Focus
+              </motion.button>
+            </div>
+          )}
+
           {/* Done state */}
-          {done && (
+          {phase === 'done' && (
             <div className="text-center py-4">
-              <p className="text-sm font-medium text-foreground mb-1">Good. Continue or break?</p>
+              <p className="text-sm font-medium text-foreground">✔ {duration} min done</p>
+              <p className="text-xs text-muted-foreground mt-1">Stayed consistent.</p>
               <div className="flex gap-2 mt-3 justify-center">
-                <motion.button whileTap={{ scale: 0.96 }} onClick={startSession}
+                <motion.button whileTap={{ scale: 0.96 }} onClick={startFocus}
                   className="rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground">
                   Continue
                 </motion.button>
-                <motion.button whileTap={{ scale: 0.96 }} onClick={() => { resetSession(); setExpanded(false); }}
+                <motion.button whileTap={{ scale: 0.96 }} onClick={() => { resetAll(); setExpanded(false); }}
                   className="rounded-lg border border-border px-4 py-2 text-xs font-medium text-foreground">
-                  Break
+                  Done
                 </motion.button>
               </div>
             </div>
           )}
 
-          {/* Timer */}
-          {!done && (
+          {/* Focus / Paused / Idle timer */}
+          {(phase === 'idle' || phase === 'focus' || phase === 'paused') && (
             <>
               <div className="text-center mb-4">
-                <span className="text-4xl font-bold tabular-nums text-foreground">{formatTime(timeLeft)}</span>
+                <span className="text-4xl font-bold tabular-nums text-foreground">
+                  {phase === 'idle' ? formatTime(duration * 60) : formatTime(timeLeft)}
+                </span>
               </div>
 
-              {!running && (
-                <div className="flex justify-center gap-2 mb-4">
-                  {PRESETS.map(p => (
-                    <motion.button key={p} whileTap={{ scale: 0.96 }}
-                      onClick={() => setDuration(p)}
-                      className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                        duration === p ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                      }`}
-                    >
-                      {p}m
-                    </motion.button>
-                  ))}
+              {/* Sound indicator when running */}
+              {(phase === 'focus' || phase === 'paused') && sound !== 'None' && (
+                <div className="flex items-center justify-center gap-1.5 mb-3">
+                  <Volume2 className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-[10px] text-muted-foreground">{sound}</span>
                 </div>
               )}
 
-              {/* Sound */}
-              <div className="flex items-center gap-2 mb-4">
-                <Volume2 className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                <div className="flex gap-1.5 flex-1">
-                  {SOUNDS.map(s => (
-                    <button key={s}
-                      onClick={() => setSound(s)}
-                      className={`flex-1 rounded-md px-1 py-1 text-[10px] font-medium transition-colors ${
-                        sound === s ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* Progress bar */}
-              {running && (
+              {(phase === 'focus' || phase === 'paused') && (
                 <div className="h-1 rounded-full bg-muted mb-4 overflow-hidden">
                   <motion.div className="h-full bg-primary rounded-full" style={{ width: `${progress * 100}%` }} />
                 </div>
@@ -280,10 +306,16 @@ export default function FocusWidget() {
               {/* Action */}
               <motion.button
                 whileTap={{ scale: 0.96 }}
-                onClick={() => running ? stopSession() : startSession()}
+                onClick={() => {
+                  if (phase === 'idle') startFocus();
+                  else if (phase === 'focus') pauseFocus();
+                  else if (phase === 'paused') resumeFocus();
+                }}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-medium text-primary-foreground"
               >
-                {running ? <><Pause className="h-4 w-4" /> Pause</> : <><Play className="h-4 w-4" /> Start</>}
+                {phase === 'focus' ? <><Pause className="h-4 w-4" /> Pause</> :
+                 phase === 'paused' ? <><Play className="h-4 w-4" /> Resume</> :
+                 <><Play className="h-4 w-4" /> Start</>}
               </motion.button>
             </>
           )}

@@ -173,6 +173,35 @@ export default function SettingsPage() {
           open={openSection === 'focus'}
           onToggle={() => toggle('focus')}
         >
+          <Row label="Duration">
+            <div className="flex rounded-lg border border-border overflow-hidden">
+              {[25, 45, 60, 90].map(m => (
+                <button
+                  key={m}
+                  onClick={() => update({ focusDuration: m })}
+                  className={`min-h-[36px] px-3 py-1.5 text-[11px] transition-colors ${
+                    settings.focusDuration === m ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
+                  }`}
+                >
+                  {m}m
+                </button>
+              ))}
+            </div>
+          </Row>
+          <Row label="Break Duration">
+            <SegmentedControl
+              options={['2', '5', '10']}
+              value={String(settings.focusBreakDuration)}
+              onChange={v => update({ focusBreakDuration: Number(v) })}
+            />
+          </Row>
+          <Row label="Sound">
+            <SegmentedControl
+              options={['None', 'White', 'Brown', 'Rain']}
+              value={settings.focusSound}
+              onChange={v => update({ focusSound: v as AppSettings['focusSound'] })}
+            />
+          </Row>
           <Row label="Background">
             <SegmentedControl
               options={['breathing', 'particles', 'waves']}
@@ -188,6 +217,7 @@ export default function SettingsPage() {
             />
           </Row>
           <ToggleRow label="Lock-in mode" checked={settings.focusLockIn} onChange={v => update({ focusLockIn: v })} />
+          <ToggleRow label="Auto-start next session" checked={settings.focusAutoNext} onChange={v => update({ focusAutoNext: v })} />
         </AccordionSection>
 
         {/* NOTIFICATIONS */}
