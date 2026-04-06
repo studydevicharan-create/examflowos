@@ -173,26 +173,20 @@ export default function SettingsPage() {
           open={openSection === 'focus'}
           onToggle={() => toggle('focus')}
         >
-          <Row label="Duration">
-            <div className="flex rounded-lg border border-border overflow-hidden">
-              {[25, 45, 60, 90].map(m => (
-                <button
-                  key={m}
-                  onClick={() => update({ focusDuration: m })}
-                  className={`min-h-[36px] px-3 py-1.5 text-[11px] transition-colors ${
-                    settings.focusDuration === m ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
-                  }`}
-                >
-                  {m}m
-                </button>
-              ))}
-            </div>
+          <Row label="Focus Duration" description={`${settings.focusDuration} min`}>
+            <ScrollPicker
+              values={Array.from({ length: 17 }, (_, i) => 10 + i * 5)}
+              value={settings.focusDuration}
+              onChange={v => update({ focusDuration: v })}
+              suffix="min"
+            />
           </Row>
-          <Row label="Break Duration">
-            <SegmentedControl
-              options={['2', '5', '10']}
-              value={String(settings.focusBreakDuration)}
-              onChange={v => update({ focusBreakDuration: Number(v) })}
+          <Row label="Break Duration" description={`${settings.focusBreakDuration} min`}>
+            <ScrollPicker
+              values={Array.from({ length: 15 }, (_, i) => i + 1)}
+              value={settings.focusBreakDuration}
+              onChange={v => update({ focusBreakDuration: v })}
+              suffix="min"
             />
           </Row>
           <Row label="Sound">
