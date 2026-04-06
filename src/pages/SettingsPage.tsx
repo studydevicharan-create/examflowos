@@ -602,13 +602,14 @@ function StudySystemContent() {
 function SocialButton({ label, href, icon }: { label: string; href: string; icon: React.ReactNode }) {
   return (
     <motion.a
-      whileTap={{ scale: 0.96 }}
+      whileTap={{ scale: 0.94 }}
+      whileHover={{ scale: 1.04 }}
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center gap-2 rounded-xl border border-border bg-secondary px-4 py-2.5 min-h-[44px] text-xs text-foreground transition-colors"
+      className="flex items-center gap-2 rounded-xl border border-border bg-secondary/80 px-4 py-2.5 min-h-[44px] text-xs font-medium text-foreground transition-all hover:border-primary/30 hover:bg-secondary"
     >
-      {icon}
+      <span className="text-primary">{icon}</span>
       {label}
     </motion.a>
   );
