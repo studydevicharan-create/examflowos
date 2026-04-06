@@ -18,6 +18,10 @@ export interface AppSettings {
   focusBackground: 'breathing' | 'particles' | 'waves';
   focusIntensity: 'low' | 'medium';
   focusLockIn: boolean;
+  focusDuration: number;
+  focusBreakDuration: number;
+  focusSound: 'None' | 'White' | 'Brown' | 'Rain';
+  focusAutoNext: boolean;
   // Notifications
   notifyReminders: boolean;
   notifyStreak: boolean;
