@@ -435,7 +435,7 @@ function NotificationPermissionRow() {
   );
 }
 
-
+function AccordionSection({ icon, title, open, onToggle, children }: {
   icon: React.ReactNode; title: string; open: boolean; onToggle: () => void; children: React.ReactNode;
 }) {
   return (
