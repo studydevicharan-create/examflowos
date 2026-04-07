@@ -5,6 +5,8 @@ import { Plus, Brain, TrendingUp, Calendar } from 'lucide-react';
 import { getSubjects, getFlashcards, getNodes, getNodeProgress, getDailyStats } from '@/lib/store';
 
 import HomeTooltip from '@/components/HomeTooltip';
+import SearchBar from '@/components/SearchBar';
+import { FocusHome } from '@/components/FocusWidget';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -44,6 +46,8 @@ export default function HomePage() {
       </motion.div>
 
       <HomeTooltip />
+      <SearchBar />
+      <FocusHome />
 
       {/* Quick Stats */}
       <div className="mt-6 grid grid-cols-3 gap-3">
