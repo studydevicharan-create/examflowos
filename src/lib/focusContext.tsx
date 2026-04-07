@@ -2,6 +2,13 @@ import { createContext, useContext, useState, useEffect, useRef, useCallback, ty
 import { getSettings } from '@/lib/settings';
 import { notifyFocusStart, notifyFocusEnd, notifyStreak } from '@/lib/focusNotifications';
 import { getBreakAction, type BreakAction } from '@/lib/breakActions';
+import {
+  notifyFocusStartBrowser,
+  notifyFocusEndBrowser,
+  notifyBreakEndBrowser,
+  notifyStreakBrowser,
+  getNotificationPermission,
+} from '@/lib/notifications';
 
 export type FocusPhase = 'idle' | 'focus' | 'paused' | 'done' | 'break';
 
@@ -109,7 +116,10 @@ export function FocusProvider({ children }: { children: ReactNode }) {
     setPhase('focus');
     setBreakAction(null);
     startAudio();
-    if (settings.notifyReminders) notifyFocusStart();
+    if (settings.notifyReminders) {
+      notifyFocusStart();
+      if (getNotificationPermission() === 'granted') notifyFocusStartBrowser();
+    }
   }, [duration, startAudio, settings.notifyReminders]);
 
   const pauseFocus = useCallback(() => {
@@ -131,10 +141,16 @@ export function FocusProvider({ children }: { children: ReactNode }) {
     setPhase('break');
     setSessionCount(c => {
       const next = c + 1;
-      if (settings.notifyStreak && next > 1 && next % 2 === 0) notifyStreak(next);
+      if (settings.notifyStreak && next > 1 && next % 2 === 0) {
+        notifyStreak(next);
+        if (getNotificationPermission() === 'granted') notifyStreakBrowser(next);
+      }
       return next;
     });
-    if (settings.notifyReminders) notifyFocusEnd();
+    if (settings.notifyReminders) {
+      notifyFocusEnd();
+      if (getNotificationPermission() === 'granted') notifyFocusEndBrowser(breakAction?.text);
+    }
   }, [clearTimer, stopAudio, duration, breakDuration, settings.notifyStreak, settings.notifyReminders]);
 
   const resetAll = useCallback(() => {
@@ -155,6 +171,9 @@ export function FocusProvider({ children }: { children: ReactNode }) {
           if (phase === 'focus') {
             startBreak();
           } else if (phase === 'break') {
+            if (getNotificationPermission() === 'granted' && settings.notifyReminders) {
+              notifyBreakEndBrowser();
+            }
             if (settings.focusAutoNext) {
               startFocus();
             } else {

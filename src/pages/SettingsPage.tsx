@@ -1,7 +1,14 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Download, Upload, AlertTriangle, ChevronDown, BookOpen, Palette, Zap, Database, Brain, Focus, Bell, GraduationCap } from 'lucide-react';
+import { Trash2, Download, Upload, AlertTriangle, ChevronDown, BookOpen, Palette, Zap, Database, Brain, Focus, Bell, GraduationCap, BellRing, BellOff, Shield } from 'lucide-react';
 import { getSettings, saveSettings, type AppSettings } from '@/lib/settings';
+import {
+  isNotificationSupported,
+  getNotificationPermission,
+  requestNotificationPermission,
+  sendNotification,
+  type NotificationPermissionState,
+} from '@/lib/notifications';
 
 type SectionKey = 'study' | 'flashcard' | 'appearance' | 'performance' | 'focus' | 'notifications' | 'data' | 'studysystem' | null;
 
@@ -221,7 +228,8 @@ export default function SettingsPage() {
           open={openSection === 'notifications'}
           onToggle={() => toggle('notifications')}
         >
-          <ToggleRow label="Reminders" checked={settings.notifyReminders} onChange={v => update({ notifyReminders: v })} />
+          <NotificationPermissionRow />
+          <ToggleRow label="Focus reminders" checked={settings.notifyReminders} onChange={v => update({ notifyReminders: v })} />
           <ToggleRow label="Streak notifications" checked={settings.notifyStreak} onChange={v => update({ notifyStreak: v })} />
           <ToggleRow label="Exam mode alerts" checked={settings.notifyExamMode} onChange={v => update({ notifyExamMode: v })} />
         </AccordionSection>
@@ -356,6 +364,76 @@ export default function SettingsPage() {
 }
 
 // --- Sub-components ---
+
+function NotificationPermissionRow() {
+  const [permState, setPermState] = useState<NotificationPermissionState>(() => getNotificationPermission());
+  const supported = isNotificationSupported();
+
+  const handleRequest = async () => {
+    const result = await requestNotificationPermission();
+    setPermState(result);
+    if (result === 'granted') {
+      sendNotification('Notifications enabled ✔', {
+        body: 'You\'ll get focus & study alerts.',
+        tag: 'test',
+      });
+    }
+  };
+
+  if (!supported) {
+    return (
+      <div className="flex items-center gap-3 min-h-[48px] py-3">
+        <BellOff className="h-4 w-4 text-muted-foreground shrink-0" />
+        <div className="flex-1">
+          <p className="text-sm text-muted-foreground">Not supported</p>
+          <p className="text-[10px] text-muted-foreground/60">Your browser doesn't support notifications.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (permState === 'granted') {
+    return (
+      <div className="flex items-center gap-3 min-h-[48px] py-3">
+        <BellRing className="h-4 w-4 text-primary shrink-0" />
+        <div className="flex-1">
+          <p className="text-sm text-foreground">Browser notifications</p>
+          <p className="text-[10px] text-primary/80">Enabled — you'll get real-time alerts</p>
+        </div>
+        <Shield className="h-3.5 w-3.5 text-primary/50" />
+      </div>
+    );
+  }
+
+  if (permState === 'denied') {
+    return (
+      <div className="flex items-center gap-3 min-h-[48px] py-3">
+        <BellOff className="h-4 w-4 text-destructive/70 shrink-0" />
+        <div className="flex-1">
+          <p className="text-sm text-foreground">Browser notifications</p>
+          <p className="text-[10px] text-muted-foreground/60">Blocked — enable in browser settings</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-3 min-h-[48px] py-3">
+      <Bell className="h-4 w-4 text-muted-foreground shrink-0" />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm text-foreground">Browser notifications</p>
+        <p className="text-[10px] text-muted-foreground/60">Get alerts even when minimized</p>
+      </div>
+      <motion.button
+        whileTap={{ scale: 0.95 }}
+        onClick={handleRequest}
+        className="rounded-lg bg-primary px-3 py-1.5 text-[11px] font-medium text-primary-foreground"
+      >
+        Enable
+      </motion.button>
+    </div>
+  );
+}
 
 function AccordionSection({ icon, title, open, onToggle, children }: {
   icon: React.ReactNode; title: string; open: boolean; onToggle: () => void; children: React.ReactNode;
