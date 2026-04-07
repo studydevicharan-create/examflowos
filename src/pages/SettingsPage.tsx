@@ -1,7 +1,14 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Download, Upload, AlertTriangle, ChevronDown, BookOpen, Palette, Zap, Database, Brain, Focus, Bell, GraduationCap } from 'lucide-react';
+import { Trash2, Download, Upload, AlertTriangle, ChevronDown, BookOpen, Palette, Zap, Database, Brain, Focus, Bell, GraduationCap, BellRing, BellOff, Shield } from 'lucide-react';
 import { getSettings, saveSettings, type AppSettings } from '@/lib/settings';
+import {
+  isNotificationSupported,
+  getNotificationPermission,
+  requestNotificationPermission,
+  sendNotification,
+  type NotificationPermissionState,
+} from '@/lib/notifications';
 
 type SectionKey = 'study' | 'flashcard' | 'appearance' | 'performance' | 'focus' | 'notifications' | 'data' | 'studysystem' | null;
 
@@ -221,7 +228,8 @@ export default function SettingsPage() {
           open={openSection === 'notifications'}
           onToggle={() => toggle('notifications')}
         >
-          <ToggleRow label="Reminders" checked={settings.notifyReminders} onChange={v => update({ notifyReminders: v })} />
+          <NotificationPermissionRow />
+          <ToggleRow label="Focus reminders" checked={settings.notifyReminders} onChange={v => update({ notifyReminders: v })} />
           <ToggleRow label="Streak notifications" checked={settings.notifyStreak} onChange={v => update({ notifyStreak: v })} />
           <ToggleRow label="Exam mode alerts" checked={settings.notifyExamMode} onChange={v => update({ notifyExamMode: v })} />
         </AccordionSection>
