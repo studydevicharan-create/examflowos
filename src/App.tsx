@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import BottomNav from "@/components/BottomNav";
 import SplashScreen from "@/components/SplashScreen";
 import OnboardingFlow, { hasSeenOnboarding } from "@/components/OnboardingFlow";
-import FocusWidget from "@/components/FocusWidget";
+import { FocusMiniPill } from "@/components/FocusWidget";
 import { FocusProvider } from "@/lib/focusContext";
 import HomePage from "./pages/HomePage";
 import SubjectsPage from "./pages/SubjectsPage";
@@ -47,7 +47,7 @@ const App = () => {
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <BottomNav />
-              <FocusWidget />
+              <FocusMiniPill />
             </div>
           </BrowserRouter>
         </FocusProvider>
