@@ -156,7 +156,7 @@ export function FocusHome() {
 // Floating mini pill — shown on ALL non-home screens when timer is active
 export function FocusMiniPill() {
   const location = useLocation();
-  const { phase, timeLeft, progress, expanded, setExpanded, pauseFocus, resumeFocus, startFocus, resetAll, breakAction } = useFocus();
+  const { phase, timeLeft, progress, expanded, setExpanded, pauseFocus, resumeFocus, startFocus, resetAll, breakAction, sound } = useFocus();
   const settings = getSettings();
   const isHome = location.pathname === '/';
 
@@ -191,7 +191,7 @@ export function FocusMiniPill() {
               type={settings.focusBackground}
               intensity={settings.focusIntensity}
               progress={progress}
-              sound={useFocus().sound}
+              sound={sound}
             />
           )}
           <div className="relative p-4">
