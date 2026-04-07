@@ -171,6 +171,9 @@ export function FocusProvider({ children }: { children: ReactNode }) {
           if (phase === 'focus') {
             startBreak();
           } else if (phase === 'break') {
+            if (getNotificationPermission() === 'granted' && settings.notifyReminders) {
+              notifyBreakEndBrowser();
+            }
             if (settings.focusAutoNext) {
               startFocus();
             } else {
