@@ -48,6 +48,23 @@ export function addSubject(title: string, color: string): Subject {
   return subject;
 }
 
+export function updateSubject(id: string, updates: Partial<Pick<Subject, 'title' | 'color'>>) {
+  const subjects = getSubjects();
+  const idx = subjects.findIndex(s => s.id === id);
+  if (idx !== -1) {
+    subjects[idx] = { ...subjects[idx], ...updates };
+    saveSubjects(subjects);
+    if (updates.title) {
+      const nodes = getNodes();
+      const rootNodeId = subjects[idx].rootNodeId;
+      if (nodes[rootNodeId]) {
+        nodes[rootNodeId].title = updates.title;
+        saveNodes(nodes);
+      }
+    }
+  }
+}
+
 export function deleteSubject(id: string) {
   saveSubjects(getSubjects().filter(s => s.id !== id));
   const nodes = getNodes();

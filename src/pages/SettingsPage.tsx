@@ -1,7 +1,8 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Download, Upload, AlertTriangle, ChevronDown, BookOpen, Palette, Zap, Database, Brain, Focus, Bell, GraduationCap, BellRing, BellOff, Shield } from 'lucide-react';
+import { Trash2, Download, Upload, AlertTriangle, ChevronDown, BookOpen, Palette, Zap, Database, Brain, Focus, Bell, GraduationCap, BellRing, BellOff, Shield, CheckCircle2, Loader2, XCircle } from 'lucide-react';
 import { getSettings, saveSettings, type AppSettings } from '@/lib/settings';
+import { getSubjects, getNodes, getFlashcards, saveSubjects, saveNodes, saveFlashcards } from '@/lib/store';
 import {
   isNotificationSupported,
   getNotificationPermission,
@@ -10,13 +11,83 @@ import {
   type NotificationPermissionState,
 } from '@/lib/notifications';
 
+// ---- Export/Import helpers ----
+function buildExportPayload() {
+  const subjects = getSubjects();
+  const nodes = getNodes();
+  const cards = getFlashcards();
+
+  return {
+    version: '1.0',
+    exportedAt: new Date().toISOString(),
+    subjects: subjects.map(subject => {
+      const rootNode = nodes[subject.rootNodeId];
+      const buildUnit = (unitId: string) => {
+        const unit = nodes[unitId];
+        if (!unit) return null;
+        return {
+          id: unit.id,
+          name: unit.title,
+          topics: unit.children.map(topicId => {
+            const topic = nodes[topicId];
+            if (!topic) return null;
+            return {
+              id: topic.id,
+              name: topic.title,
+              notes: topic.notes || '',
+              important: topic.important,
+              completed: topic.completed,
+              cards: cards
+                .filter(c => c.topicId === topic.id)
+                .map(c => ({
+                  id: c.id,
+                  type: c.type,
+                  prompt: c.prompt,
+                  reveal: c.reveal,
+                  hint: c.hint,
+                  image: c.image,
+                  stats: {
+                    easy: c.easeCount,
+                    hard: c.hardCount,
+                    skip: c.skipCount,
+                    lastSeen: c.lastSeen,
+                  },
+                })),
+            };
+          }).filter(Boolean),
+        };
+      };
+
+      return {
+        id: subject.id,
+        name: subject.title,
+        color: subject.color,
+        examDate: subject.examDate,
+        units: (rootNode?.children || []).map(buildUnit).filter(Boolean),
+      };
+    }),
+  };
+}
+
+type ExportStatus = 'idle' | 'preparing' | 'ready' | 'done' | 'error';
+type ImportStatus = 'idle' | 'checking' | 'confirm' | 'importing' | 'done' | 'error';
+
 type SectionKey = 'study' | 'flashcard' | 'appearance' | 'performance' | 'focus' | 'notifications' | 'data' | 'studysystem' | null;
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<AppSettings>(getSettings);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
-  const [importMessage, setImportMessage] = useState('');
   const [openSection, setOpenSection] = useState<SectionKey>(null);
+
+  // Export state
+  const [exportStatus, setExportStatus] = useState<ExportStatus>('idle');
+  const exportBlobRef = useRef<{ url: string; filename: string } | null>(null);
+
+  // Import state
+  const [importStatus, setImportStatus] = useState<ImportStatus>('idle');
+  const [importError, setImportError] = useState('');
+  const [pendingImportData, setPendingImportData] = useState<unknown>(null);
+  const importFileRef = useRef<HTMLInputElement>(null);
 
   const update = useCallback((patch: Partial<AppSettings>) => {
     const next = { ...settings, ...patch };
@@ -33,39 +104,152 @@ export default function SettingsPage() {
     window.location.reload();
   };
 
-  const exportData = () => {
-    const data: Record<string, string | null> = {};
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key) data[key] = localStorage.getItem(key);
+  // ---- Export flow ----
+  const startExport = async () => {
+    setExportStatus('preparing');
+    try {
+      await new Promise(r => setTimeout(r, 600));
+      const payload = buildExportPayload();
+      const json = JSON.stringify(payload, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const filename = `examflowos-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      exportBlobRef.current = { url, filename };
+      setExportStatus('ready');
+    } catch {
+      setExportStatus('error');
     }
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `examflowos-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
-  const importData = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const downloadExport = () => {
+    if (!exportBlobRef.current) return;
+    const a = document.createElement('a');
+    a.href = exportBlobRef.current.url;
+    a.download = exportBlobRef.current.filename;
+    a.click();
+    setExportStatus('done');
+    setTimeout(() => {
+      if (exportBlobRef.current) URL.revokeObjectURL(exportBlobRef.current.url);
+      exportBlobRef.current = null;
+      setExportStatus('idle');
+    }, 3000);
+  };
+
+  const resetExport = () => {
+    if (exportBlobRef.current) URL.revokeObjectURL(exportBlobRef.current.url);
+    exportBlobRef.current = null;
+    setExportStatus('idle');
+  };
+
+  // ---- Import flow ----
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setImportStatus('checking');
+    setImportError('');
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        const data = JSON.parse(reader.result as string);
-        Object.entries(data).forEach(([key, value]) => {
-          if (typeof value === 'string') localStorage.setItem(key, value);
-        });
-        setImportMessage('Data imported! Reloading...');
-        setTimeout(() => window.location.reload(), 1000);
+        const parsed = JSON.parse(reader.result as string);
+        if (!parsed.version || !Array.isArray(parsed.subjects)) {
+          setImportStatus('error');
+          setImportError('Invalid file. Import failed.');
+          return;
+        }
+        setPendingImportData(parsed);
+        setImportStatus('confirm');
       } catch {
-        setImportMessage('Invalid file format');
-        setTimeout(() => setImportMessage(''), 3000);
+        setImportStatus('error');
+        setImportError('Invalid file. Import failed.');
       }
+      if (importFileRef.current) importFileRef.current.value = '';
     };
     reader.readAsText(file);
+  };
+
+  const confirmImport = async () => {
+    if (!pendingImportData) return;
+    setImportStatus('importing');
+    try {
+      await new Promise(r => setTimeout(r, 700));
+      const data = pendingImportData as ReturnType<typeof buildExportPayload>;
+      // Rebuild localStorage from structured format
+      const { v4: uuidv4 } = await import('uuid');
+      const newSubjects: ReturnType<typeof getSubjects> = [];
+      const newNodes: ReturnType<typeof getNodes> = {};
+      const newCards: ReturnType<typeof getFlashcards> = [];
+
+      for (const sub of data.subjects) {
+        const rootNodeId = uuidv4();
+        newSubjects.push({
+          id: sub.id,
+          title: sub.name,
+          color: sub.color || 'blue',
+          rootNodeId,
+          createdAt: new Date().toISOString(),
+          lastStudied: null,
+          examDate: sub.examDate || null,
+        });
+        newNodes[rootNodeId] = {
+          id: rootNodeId, parentId: null, subjectId: sub.id,
+          title: sub.name, depth: 0, completed: false, important: false,
+          notes: '', lastRevised: null, order: 0, children: [], tags: [],
+        };
+        for (const unit of (sub.units || [])) {
+          if (!unit) continue;
+          newNodes[unit.id] = {
+            id: unit.id, parentId: rootNodeId, subjectId: sub.id,
+            title: unit.name, depth: 1, completed: false, important: false,
+            notes: '', lastRevised: null, order: 0, children: [], tags: [],
+          };
+          newNodes[rootNodeId].children.push(unit.id);
+          for (const topic of (unit.topics || [])) {
+            if (!topic) continue;
+            newNodes[topic.id] = {
+              id: topic.id, parentId: unit.id, subjectId: sub.id,
+              title: topic.name, depth: 2,
+              completed: topic.completed ?? false,
+              important: topic.important ?? false,
+              notes: topic.notes || '', lastRevised: null,
+              order: 0, children: [], tags: [],
+            };
+            newNodes[unit.id].children.push(topic.id);
+            for (const card of (topic.cards || [])) {
+              if (!card) continue;
+              newCards.push({
+                id: card.id, topicId: topic.id, subjectId: sub.id,
+                type: card.type || 'text', prompt: card.prompt || '',
+                reveal: card.reveal || '', hint: card.hint || '',
+                image: card.image || '',
+                easeCount: card.stats?.easy ?? 0,
+                hardCount: card.stats?.hard ?? 0,
+                skipCount: card.stats?.skip ?? 0,
+                lastSeen: card.stats?.lastSeen || null,
+                easeFactor: 2.5, interval: 1, repetitions: 0,
+                nextReview: new Date().toISOString(),
+              });
+            }
+          }
+        }
+      }
+
+      saveSubjects(newSubjects);
+      saveNodes(newNodes);
+      saveFlashcards(newCards);
+      setPendingImportData(null);
+      setImportStatus('done');
+      setTimeout(() => window.location.reload(), 1500);
+    } catch {
+      setImportStatus('error');
+      setImportError('Import failed. Please try again.');
+    }
+  };
+
+  const resetImport = () => {
+    setImportStatus('idle');
+    setImportError('');
+    setPendingImportData(null);
+    if (importFileRef.current) importFileRef.current.value = '';
   };
 
   return (
@@ -251,25 +435,151 @@ export default function SettingsPage() {
           open={openSection === 'data'}
           onToggle={() => toggle('data')}
         >
-          <button
-            onClick={exportData}
-            className="flex w-full items-center gap-3 min-h-[48px] py-3 text-sm text-foreground transition-colors active:opacity-70"
-          >
-            <Download className="h-4 w-4 text-muted-foreground" />
-            <span>Export Data (JSON)</span>
-          </button>
+          {/* Trust element */}
+          <div className="flex items-center gap-2 py-3 border-b border-border/50">
+            <Shield className="h-3.5 w-3.5 text-primary/70 flex-shrink-0" />
+            <p className="text-[11px] text-muted-foreground">Your data stays on your device.</p>
+          </div>
 
-          <label className="flex w-full cursor-pointer items-center gap-3 min-h-[48px] py-3 text-sm text-foreground transition-colors active:opacity-70">
-            <Upload className="h-4 w-4 text-muted-foreground" />
-            <span>Import Data</span>
-            <input type="file" accept=".json" onChange={importData} className="hidden" />
-          </label>
+          {/* Export section */}
+          <div className="py-3 space-y-2">
+            <p className="text-xs font-medium text-foreground">Export Data</p>
+            {exportStatus === 'idle' && (
+              <motion.button
+                whileTap={{ scale: 0.96 }}
+                onClick={startExport}
+                className="flex w-full items-center gap-3 min-h-[48px] rounded-lg border border-border bg-secondary px-4 py-3 text-sm text-foreground transition-colors active:opacity-80"
+              >
+                <Download className="h-4 w-4 text-muted-foreground" />
+                <span>Export Data (JSON)</span>
+              </motion.button>
+            )}
+            {exportStatus === 'preparing' && (
+              <div className="flex items-center gap-3 min-h-[48px] rounded-lg border border-border bg-secondary px-4 py-3">
+                <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                <span className="text-sm text-muted-foreground">Preparing your data...</span>
+              </div>
+            )}
+            {exportStatus === 'ready' && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 min-h-[44px] rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
+                  <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
+                  <span className="text-sm text-foreground">Export ready</span>
+                </div>
+                <div className="flex gap-2">
+                  <motion.button
+                    whileTap={{ scale: 0.96 }}
+                    onClick={downloadExport}
+                    className="flex-1 min-h-[44px] rounded-lg bg-primary text-sm font-medium text-primary-foreground"
+                  >
+                    Download File
+                  </motion.button>
+                  <button
+                    onClick={resetExport}
+                    className="min-h-[44px] px-4 rounded-lg border border-border text-xs text-muted-foreground"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+            {exportStatus === 'done' && (
+              <div className="flex items-center gap-3 min-h-[44px] rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
+                <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
+                <span className="text-sm text-primary">Data exported successfully</span>
+              </div>
+            )}
+            {exportStatus === 'error' && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 min-h-[44px] rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3">
+                  <XCircle className="h-4 w-4 text-destructive flex-shrink-0" />
+                  <span className="text-sm text-destructive">Export failed. Try again.</span>
+                </div>
+                <button onClick={resetExport} className="text-xs text-primary">Retry</button>
+              </div>
+            )}
+          </div>
 
-          {importMessage && <p className="text-xs text-primary">{importMessage}</p>}
+          {/* Import section */}
+          <div className="py-3 space-y-2 border-t border-border/50">
+            <p className="text-xs font-medium text-foreground">Import Data</p>
+            {importStatus === 'idle' && (
+              <motion.button
+                whileTap={{ scale: 0.96 }}
+                onClick={() => importFileRef.current?.click()}
+                className="flex w-full items-center gap-3 min-h-[48px] rounded-lg border border-border bg-secondary px-4 py-3 text-sm text-foreground transition-colors active:opacity-80"
+              >
+                <Upload className="h-4 w-4 text-muted-foreground" />
+                <span>Import Data</span>
+              </motion.button>
+            )}
+            {importStatus === 'checking' && (
+              <div className="flex items-center gap-3 min-h-[48px] rounded-lg border border-border bg-secondary px-4 py-3">
+                <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                <span className="text-sm text-muted-foreground">Checking file...</span>
+              </div>
+            )}
+            {importStatus === 'confirm' && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 min-h-[44px] rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
+                  <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
+                  <span className="text-sm text-foreground">File ready to import</span>
+                </div>
+                <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 px-4 py-3">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    <strong className="text-foreground">Import will replace current data.</strong> All existing subjects and flashcards will be overwritten.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={resetImport}
+                    className="flex-1 min-h-[44px] rounded-lg border border-border text-xs text-muted-foreground"
+                  >
+                    Cancel
+                  </button>
+                  <motion.button
+                    whileTap={{ scale: 0.96 }}
+                    onClick={confirmImport}
+                    className="flex-1 min-h-[44px] rounded-lg bg-primary text-sm font-medium text-primary-foreground"
+                  >
+                    Import
+                  </motion.button>
+                </div>
+              </div>
+            )}
+            {importStatus === 'importing' && (
+              <div className="flex items-center gap-3 min-h-[48px] rounded-lg border border-border bg-secondary px-4 py-3">
+                <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                <span className="text-sm text-muted-foreground">Importing...</span>
+              </div>
+            )}
+            {importStatus === 'done' && (
+              <div className="flex items-center gap-3 min-h-[44px] rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
+                <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
+                <span className="text-sm text-primary">Import successful</span>
+              </div>
+            )}
+            {importStatus === 'error' && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 min-h-[44px] rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3">
+                  <XCircle className="h-4 w-4 text-destructive flex-shrink-0" />
+                  <span className="text-sm text-destructive">{importError}</span>
+                </div>
+                <button onClick={resetImport} className="text-xs text-primary">Try again</button>
+              </div>
+            )}
+            <input
+              ref={importFileRef}
+              type="file"
+              accept=".json"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+          </div>
 
           <button
             onClick={() => setShowClearConfirm(true)}
-            className="flex w-full items-center gap-3 min-h-[48px] py-3 text-sm text-destructive"
+            className="flex w-full items-center gap-3 min-h-[48px] py-3 text-sm text-destructive border-t border-border/50"
           >
             <Trash2 className="h-4 w-4" />
             <span>Clear All Data</span>

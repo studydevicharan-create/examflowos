@@ -1,0 +1,321 @@
+You are a senior frontend engineer and UX designer focused on stability, usability, and bug-free experience.
+
+The app (ExamFlowOS) is already built.
+Your task is NOT to add features but to FIX all critical issues and make the app feel reliable, fast, and trustworthy.
+
+---
+
+## 🔴 CORE OBJECTIVE
+
+Make the app:
+
+* Fully stable
+* Fully responsive
+* Bug-free
+* Predictable
+* Frictionless
+
+User should feel:
+"This app just works."
+
+---
+
+## 🔴 CRITICAL BUG FIXES (MUST FIX)
+
+1. ENTER KEY NOT WORKING
+
+* In all input fields (Add Subject, Unit, Topic):
+
+  * Pressing Enter must submit
+
+Fix:
+
+* Add onKeyDown:
+  if (key === "Enter") → trigger submit
+
+* If empty:
+
+  * do nothing OR show subtle validation
+
+---
+
+2. ADD SUBJECT FLOW BROKEN
+
+Fix:
+
+* Ensure:
+
+  * Button enabled only when valid input
+  * No UI overlap blocking clicks
+  * State updates correctly
+  * Immediate response on submit
+
+---
+
+3. CALENDAR NOT WORKING
+
+Fix:
+
+* Check:
+
+  * Date parsing
+  * Timezone consistency
+  * Component rendering
+
+Fallback:
+
+* If broken → hide calendar completely
+
+---
+
+4. ADD EDIT / DELETE (MANDATORY)
+
+For:
+
+* Subject
+* Unit
+* Topic
+
+UI pattern:
+
+[ Title ]       [ ⋯ ]
+
+Tap ⋯ → menu:
+
+* Edit
+* Delete
+
+DELETE:
+
+* Confirmation modal:
+  "Delete this? This cannot be undone."
+
+EDIT:
+
+* Inline or modal
+* Autofocus input
+* Enter = save
+
+---
+
+5. CLICK / TOUCH ISSUES
+
+Fix:
+
+* Remove overlapping layers
+* Fix z-index
+* pointer-events enabled
+* Minimum touch size: 44px
+
+---
+
+6. SCROLL / OVERFLOW ISSUES
+
+Fix:
+
+* overflow-y: auto
+* Add bottom padding (for floating elements)
+* Ensure full content visible
+
+---
+
+---
+
+## 📤 EXPORT / IMPORT SYSTEM (FULL FIX)
+
+🔴 NEVER allow page navigation or reload
+
+---
+
+EXPORT FLOW:
+
+User taps:
+[ Export Data ]
+
+Step 1:
+Show:
+"Preparing your data..."
+Disable button
+
+Step 2:
+"Export ready"
+
+Buttons:
+[ Download File ]
+[ Share ]
+
+Step 3:
+After download:
+"Data exported successfully"
+
+Error:
+"Export failed. Try again."
+
+---
+
+IMPORT FLOW:
+
+User taps:
+[ Import Data ]
+
+Step 1:
+Select file (JSON only)
+
+Step 2:
+"Checking file..."
+
+If valid:
+"File ready to import"
+
+Step 3:
+Confirm:
+"Import will replace current data"
+
+Buttons:
+[ Cancel ] [ Import ]
+
+Step 4:
+"Importing..."
+
+Step 5:
+"Import successful"
+
+Error:
+"Invalid file. Import failed."
+
+---
+
+UX RULES:
+
+* No navigation during process
+* Always show feedback
+* Disable buttons while processing
+* Keep everything in one screen
+
+---
+
+---
+
+## 📦 EXPORT DATA FORMAT (SAFE JSON STRUCTURE)
+
+{
+"version": "1.0",
+"exportedAt": "ISO_DATE",
+"subjects": [
+{
+"id": "uuid",
+"name": "Subject Name",
+"color": "#hex",
+"units": [
+{
+"id": "uuid",
+"name": "Unit Name",
+"topics": [
+{
+"id": "uuid",
+"name": "Topic Name",
+"notes": [],
+"cards": [
+{
+"id": "uuid",
+"type": "text | image",
+"prompt": "string",
+"reveal": "string",
+"image": "base64 or url",
+"stats": {
+"easy": 0,
+"hard": 0,
+"skip": 0,
+"lastSeen": "ISO_DATE"
+}
+}
+]
+}
+]
+}
+]
+}
+]
+}
+
+---
+
+---
+
+## 🧠 INDEXEDDB EXPORT / IMPORT LOGIC
+
+EXPORT:
+
+* Fetch all subjects from IndexedDB
+* Convert to JSON
+* Create Blob
+* Trigger download:
+  filename = examflowos-backup-{date}.json
+
+---
+
+IMPORT:
+
+* Read file
+
+* Parse JSON
+
+* Validate structure:
+
+  * version exists
+  * subjects array exists
+
+* If valid:
+
+  * Clear existing DB
+  * Insert new data
+
+* Handle errors safely
+
+---
+
+---
+
+## 🎨 MICRO INTERACTIONS
+
+* Button press → scale 0.96
+* Loading → subtle spinner
+* Success → checkmark animation
+
+---
+
+---
+
+## 🔒 TRUST ELEMENT
+
+Add text:
+
+"Your data stays on your device."
+
+---
+
+---
+
+## ⚙️ CORE UX RULES
+
+1. Every action must respond instantly
+2. No dead buttons
+3. No blocked flows
+4. Always fallback instead of failure
+
+---
+
+---
+
+## 🎯 FINAL GOAL
+
+The app must feel:
+
+* Reliable
+* Fast
+* Clean
+* Safe
+
+No bugs.
+No confusion.
+No friction.

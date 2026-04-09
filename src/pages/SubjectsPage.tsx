@@ -1,9 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, AlertTriangle } from 'lucide-react';
 import SubjectCard from '@/components/SubjectCard';
-import { getSubjects, addSubject, deleteSubject } from '@/lib/store';
+import { getSubjects, addSubject, deleteSubject, updateSubject } from '@/lib/store';
+import type { Subject } from '@/lib/types';
 
 const COLORS = ['blue', 'green', 'red', 'yellow', 'purple', 'cyan'];
 const COLOR_VALUES: Record<string, string> = {
@@ -24,12 +25,19 @@ export default function SubjectsPage() {
   const [menuOpen, setMenuOpen] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
+  // Edit state
+  const [editSubject, setEditSubject] = useState<Subject | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editColor, setEditColor] = useState('blue');
+  const editInputRef = useRef<HTMLInputElement>(null);
+
   const refresh = useCallback(() => setSubjects(getSubjects()), []);
 
   const handleAdd = () => {
     if (!newTitle.trim()) return;
     addSubject(newTitle.trim(), selectedColor);
     setNewTitle('');
+    setSelectedColor('blue');
     setShowAdd(false);
     refresh();
   };
@@ -41,6 +49,20 @@ export default function SubjectsPage() {
     refresh();
   };
 
+  const openEdit = (subject: Subject) => {
+    setEditSubject(subject);
+    setEditTitle(subject.title);
+    setEditColor(subject.color);
+    setTimeout(() => editInputRef.current?.focus(), 50);
+  };
+
+  const handleEdit = () => {
+    if (!editSubject || !editTitle.trim()) return;
+    updateSubject(editSubject.id, { title: editTitle.trim(), color: editColor });
+    setEditSubject(null);
+    refresh();
+  };
+
   const subjectToDelete = deleteConfirm ? subjects.find(s => s.id === deleteConfirm) : null;
 
   return (
@@ -48,7 +70,7 @@ export default function SubjectsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-foreground">Subjects</h1>
         <motion.button
-          whileTap={{ scale: 0.9 }}
+          whileTap={{ scale: 0.96 }}
           onClick={() => setShowAdd(true)}
           className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-primary text-primary-foreground"
         >
@@ -70,6 +92,7 @@ export default function SubjectsPage() {
                 subject={s}
                 onClick={() => navigate(`/subjects/${s.id}`)}
                 onDelete={() => { setMenuOpen(''); setDeleteConfirm(s.id); }}
+                onEdit={() => openEdit(s)}
                 onMenuOpen={setMenuOpen}
                 menuOpen={menuOpen === s.id}
               />
@@ -112,7 +135,7 @@ export default function SubjectsPage() {
                 <h2 className="text-sm font-semibold text-foreground">Delete Subject</h2>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Delete <strong className="text-foreground">{subjectToDelete.title}</strong>? This will remove all topics, notes, and flashcards permanently.
+                Delete <strong className="text-foreground">{subjectToDelete.title}</strong>? This will remove all topics, notes, and flashcards permanently. This cannot be undone.
               </p>
               <div className="mt-5 flex gap-3">
                 <button
@@ -121,13 +144,75 @@ export default function SubjectsPage() {
                 >
                   Cancel
                 </button>
-                <button
+                <motion.button
+                  whileTap={{ scale: 0.96 }}
                   onClick={() => handleDelete(deleteConfirm)}
                   className="flex-1 min-h-[44px] rounded-lg bg-destructive text-xs font-medium text-destructive-foreground transition-colors active:opacity-90"
                 >
                   Delete
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Subject Modal */}
+      <AnimatePresence>
+        {editSubject && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end justify-center bg-background/80 backdrop-blur-sm"
+            onClick={() => setEditSubject(null)}
+          >
+            <motion.div
+              initial={{ y: 200 }}
+              animate={{ y: 0 }}
+              exit={{ y: 200 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              onClick={e => e.stopPropagation()}
+              className="w-full max-w-[768px] rounded-t-2xl border-t border-border bg-card p-6 safe-bottom"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-semibold text-foreground">Edit Subject</h2>
+                <button onClick={() => setEditSubject(null)} className="min-h-[44px] min-w-[44px] flex items-center justify-center text-muted-foreground">
+                  <X className="h-5 w-5" />
                 </button>
               </div>
+              <input
+                ref={editInputRef}
+                value={editTitle}
+                onChange={e => setEditTitle(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleEdit()}
+                placeholder="Subject name"
+                className="w-full min-h-[48px] rounded-lg border border-border bg-secondary px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
+              />
+              <div className="mt-4 flex gap-3">
+                {COLORS.map(c => (
+                  <button
+                    key={c}
+                    onClick={() => setEditColor(c)}
+                    className="h-8 w-8 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full transition-all"
+                  >
+                    <div
+                      className={`h-7 w-7 rounded-full border-2 ${
+                        editColor === c ? 'border-foreground scale-110' : 'border-transparent'
+                      }`}
+                      style={{ backgroundColor: COLOR_VALUES[c] }}
+                    />
+                  </button>
+                ))}
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.96 }}
+                onClick={handleEdit}
+                disabled={!editTitle.trim()}
+                className="mt-4 w-full min-h-[48px] rounded-lg bg-primary py-3 text-sm font-medium text-primary-foreground disabled:opacity-40"
+              >
+                Save Changes
+              </motion.button>
             </motion.div>
           </motion.div>
         )}
@@ -170,7 +255,7 @@ export default function SubjectsPage() {
                   <button
                     key={c}
                     onClick={() => setSelectedColor(c)}
-                    className={`h-8 w-8 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full transition-all`}
+                    className="h-8 w-8 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full transition-all"
                   >
                     <div
                       className={`h-7 w-7 rounded-full border-2 ${
@@ -181,13 +266,14 @@ export default function SubjectsPage() {
                   </button>
                 ))}
               </div>
-              <button
+              <motion.button
+                whileTap={{ scale: 0.96 }}
                 onClick={handleAdd}
                 disabled={!newTitle.trim()}
                 className="mt-4 w-full min-h-[48px] rounded-lg bg-primary py-3 text-sm font-medium text-primary-foreground disabled:opacity-40"
               >
                 Add Subject
-              </button>
+              </motion.button>
             </motion.div>
           </motion.div>
         )}

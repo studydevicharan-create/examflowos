@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { MoreVertical } from 'lucide-react';
+import { MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import type { Subject } from '@/lib/types';
 import { getNodes, getNodeProgress } from '@/lib/store';
 
@@ -7,6 +7,7 @@ interface Props {
   subject: Subject;
   onClick: () => void;
   onDelete: () => void;
+  onEdit: () => void;
   onMenuOpen: (id: string) => void;
   menuOpen: boolean;
 }
@@ -20,7 +21,7 @@ const COLORS: Record<string, string> = {
   cyan: 'hsl(192 91% 50%)',
 };
 
-export default function SubjectCard({ subject, onClick, onDelete, onMenuOpen, menuOpen }: Props) {
+export default function SubjectCard({ subject, onClick, onDelete, onEdit, onMenuOpen, menuOpen }: Props) {
   const nodes = getNodes();
   const progress = getNodeProgress(subject.rootNodeId, nodes);
   const rootNode = nodes[subject.rootNodeId];
@@ -78,9 +79,17 @@ export default function SubjectCard({ subject, onClick, onDelete, onMenuOpen, me
             className="absolute right-2 top-12 z-50 w-48 rounded-lg border border-border bg-card shadow-lg overflow-hidden"
           >
             <button
+              onClick={(e) => { e.stopPropagation(); onMenuOpen(''); onEdit(); }}
+              className="flex w-full items-center gap-3 px-4 py-3 text-xs text-foreground transition-colors active:bg-secondary"
+            >
+              <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+              Edit Subject
+            </button>
+            <button
               onClick={(e) => { e.stopPropagation(); onDelete(); }}
               className="flex w-full items-center gap-3 px-4 py-3 text-xs text-destructive transition-colors active:bg-destructive/10"
             >
+              <Trash2 className="h-3.5 w-3.5" />
               Delete Subject
             </button>
           </motion.div>
