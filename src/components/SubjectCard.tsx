@@ -30,10 +30,11 @@ export default function SubjectCard({ subject, onClick, onDelete, onEdit, onMenu
 
   return (
     <div className="relative">
-      <motion.button
+      {/* Card body — use div, not button, to avoid nested button issue */}
+      <motion.div
         whileTap={{ scale: 0.97 }}
         onClick={onClick}
-        className="w-full min-h-[72px] rounded-lg border border-border bg-card p-4 text-left transition-colors duration-150 active:bg-secondary"
+        className="w-full min-h-[72px] rounded-lg border border-border bg-card p-4 text-left transition-colors duration-150 active:bg-secondary cursor-pointer select-none"
       >
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -45,12 +46,16 @@ export default function SubjectCard({ subject, onClick, onDelete, onEdit, onMenu
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <span className="text-xs font-medium text-muted-foreground">{progress}%</span>
-            <button
+            {/* ⋯ menu button — use onClick with stopPropagation */}
+            <div
+              role="button"
+              tabIndex={0}
               onClick={(e) => { e.stopPropagation(); onMenuOpen(subject.id); }}
-              className="min-h-[44px] min-w-[44px] flex items-center justify-center -mr-2 text-muted-foreground"
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onMenuOpen(subject.id); } }}
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center -mr-2 text-muted-foreground cursor-pointer"
             >
               <MoreVertical className="h-4 w-4" />
-            </button>
+            </div>
           </div>
         </div>
         <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-muted">
@@ -67,15 +72,16 @@ export default function SubjectCard({ subject, onClick, onDelete, onEdit, onMenu
             Last studied {new Date(subject.lastStudied).toLocaleDateString()}
           </p>
         )}
-      </motion.button>
+      </motion.div>
 
-      {/* Dropdown menu */}
+      {/* Dropdown menu — outside the card div, not nested */}
       {menuOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); onMenuOpen(''); }} />
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, scale: 0.95, y: -4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.12 }}
             className="absolute right-2 top-12 z-50 w-48 rounded-lg border border-border bg-card shadow-lg overflow-hidden"
           >
             <button

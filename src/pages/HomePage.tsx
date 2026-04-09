@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Plus, Brain, TrendingUp, Calendar } from 'lucide-react';
 import { getSubjects, getFlashcards, getNodes, getNodeProgress, getDailyStats } from '@/lib/store';
@@ -10,7 +10,13 @@ import { FocusHome } from '@/components/FocusWidget';
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const [subjects] = useState(getSubjects);
+  const location = useLocation();
+  const [subjects, setSubjects] = useState(getSubjects);
+
+  // Refresh subjects every time the user navigates to Home
+  useEffect(() => {
+    setSubjects(getSubjects());
+  }, [location.key]);
   const cards = getFlashcards();
   const nodes = getNodes();
   const stats = getDailyStats();

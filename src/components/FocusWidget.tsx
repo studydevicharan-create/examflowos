@@ -160,15 +160,11 @@ export function FocusMiniPill() {
   const settings = getSettings();
   const isHome = location.pathname === '/';
 
-  // On home, the full widget handles everything
-  // Show pill on non-home pages when running, or on home when minimized (paused)
+  // FocusHome handles everything on the home page — pill must never show there
   const isActive = phase === 'focus' || phase === 'paused' || phase === 'break' || phase === 'done';
-  
+
   if (!isActive) return null;
-  // On home page, only show pill when paused+minimized
-  if (isHome && expanded) return null;
-  // On home page when not expanded (paused auto-minimized), show pill
-  // On non-home pages, always show pill when active
+  if (isHome) return null;
 
   const handlePause = () => {
     pauseFocus();

@@ -1,0 +1,323 @@
+You are a senior frontend engineer, React expert, and UX auditor.
+
+The app (ExamFlowOS) is already built. Your task is to FIX critical bugs, eliminate UX friction, and ensure a stable, smooth, and predictable experience.
+
+Do NOT add new features unless explicitly improving usability.
+
+---
+
+## 🔴 1. CRITICAL BUG FIXES (HIGH PRIORITY)
+
+A. Topic Edit / Menu Overflow Issue
+
+Problem:
+
+* The "⋯" (three-dot menu) for Topics is either:
+
+  * Rendering outside viewport
+  * Not visible
+  * Not clickable
+* Edit/Delete feels broken and inconsistent
+
+Fix:
+
+1. Ensure menu is always inside viewport:
+
+   * Use position: absolute with boundary detection
+   * If near right edge → open left
+   * If near bottom → open upward
+
+2. Add z-index:
+
+   * z-index: 999 or higher
+   * Ensure no parent has overflow: hidden blocking it
+
+3. Fix clickability:
+
+   * pointer-events: auto
+   * No overlapping layers
+
+4. Anchor positioning:
+
+   * Use relative parent container
+   * Menu should align to button properly
+
+5. Add fallback:
+
+   * If menu fails → show inline actions
+
+---
+
+B. Stale State in Focus Notifications
+
+Problem:
+
+* React async state causes wrong breakAction text in notifications
+
+Fix:
+
+const newAction = getBreakAction(duration);
+setBreakAction(newAction);
+
+notifyFocusEndBrowser(newAction?.text);
+
+NEVER use stale state immediately after setState.
+
+---
+
+C. Home Page State Sync Issue
+
+Problem:
+
+* Subjects not updating after add/edit
+
+Fix:
+
+useEffect(() => {
+setSubjects(getSubjects());
+}, [location.key]);
+
+OR use global state listener (preferred).
+
+---
+
+D. Duplicate Focus UI on Home
+
+Problem:
+
+* FocusMiniPill + FocusHome both visible
+
+Fix:
+
+if (isHome) return null;
+
+Mini pill must NEVER show on Home.
+
+---
+
+E. Calendar Selection UX
+
+Problem:
+
+* Selection unclear
+* No confirmation feedback
+
+Fix:
+
+* On tap:
+  → instantly select date
+  → highlight selected date
+
+* Show feedback:
+  "Date selected"
+
+* Add:
+  Clear (X) button
+
+* No page reload
+
+* No navigation
+
+---
+
+F. Input Stability
+
+Fix ALL inputs:
+
+* Enter key submits
+* Autofocus enabled
+* No lag
+* No dead clicks
+* Empty → ignore or subtle hint
+
+---
+
+G. Export / Import Stability
+
+Fix:
+
+* Prevent page navigation
+* Prevent reload
+* Keep user on same screen
+
+EXPORT:
+
+* "Preparing your data..."
+* Disable button
+* "Export ready"
+* "Export successful"
+
+IMPORT:
+
+* "Checking file..."
+* Confirm overwrite
+* "Importing..."
+* "Import successful"
+* Error fallback
+
+---
+
+---
+
+## 🧠 2. UX FLOW IMPROVEMENTS
+
+A. Topic Editing Experience
+
+Fix:
+
+* Ensure Edit button always visible via menu
+* Add inline edit fallback
+* Enter = save
+* Click outside = save
+
+---
+
+B. Syllabus Flexibility
+
+Problem:
+
+* User forced to create Unit first
+
+Fix:
+
+* Allow topic creation directly under Subject
+* Auto-group under:
+  "General" or "Uncategorized"
+
+---
+
+C. Onboarding Clarity
+
+Fix:
+
+* Replace static text with:
+  visual hierarchy animation
+
+Subject → Unit → Topic → Card
+
+---
+
+D. Exam Date UX
+
+Fix:
+
+* Add Clear (X) button
+* Show immediate feedback
+* No submit button needed
+
+---
+
+---
+
+## 🎯 3. FOCUS SYSTEM FIXES
+
+A. Lock-in Mode
+
+Problem:
+
+* pointer-events-none makes it non-functional
+
+Fix:
+
+* Allow interaction ONLY with focus widget
+* Block background interactions
+
+---
+
+B. Audio Context Optimization
+
+Fix:
+
+* Reuse existing AudioContext
+* Avoid creating new instances each session
+
+---
+
+C. Pause Behavior
+
+Fix:
+
+* Pause → minimize smoothly
+* DO NOT reset timer
+
+---
+
+---
+
+## 📱 4. MOBILE UX FIXES
+
+* All buttons ≥ 44px
+* No cut-off UI
+* Fix overflow issues
+* Safe area padding
+* Smooth scrolling
+
+---
+
+---
+
+## 📦 5. PERFORMANCE FIX (CRITICAL)
+
+Problem:
+
+* Timer re-renders entire app every second
+
+Fix:
+
+Option 1:
+
+* Use useRef for timer
+* Update UI only where needed
+
+Option 2:
+
+* Extract timer into isolated component
+
+Option 3 (best):
+
+* Use lightweight global store (Zustand)
+
+Goal:
+
+* Prevent full app re-render
+
+---
+
+---
+
+## 🎨 6. MICRO INTERACTIONS
+
+* Button press → scale 0.96
+* Menu open → fade + slide (150ms)
+* Success → checkmark feedback
+
+---
+
+---
+
+## 🎯 FINAL GOAL
+
+Make the app:
+
+* Bug-free
+* Smooth
+* Predictable
+* Fast
+* Clean
+
+User should feel:
+
+"Everything works instantly and perfectly."
+
+NO:
+
+* broken menus
+* hidden buttons
+* lag
+* confusion
+
+ONLY:
+
+* clarity
+* control
+* stability

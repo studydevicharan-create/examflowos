@@ -136,7 +136,9 @@ export function FocusProvider({ children }: { children: ReactNode }) {
   const startBreak = useCallback(() => {
     clearTimer();
     stopAudio(true);
-    setBreakAction(getBreakAction(duration));
+    // Capture new break action in local var first to avoid stale state
+    const newAction = getBreakAction(duration);
+    setBreakAction(newAction);
     setTimeLeft(breakDuration * 60);
     setPhase('break');
     setSessionCount(c => {
@@ -149,7 +151,8 @@ export function FocusProvider({ children }: { children: ReactNode }) {
     });
     if (settings.notifyReminders) {
       notifyFocusEnd();
-      if (getNotificationPermission() === 'granted') notifyFocusEndBrowser(breakAction?.text);
+      // Use fresh local var, not stale breakAction state
+      if (getNotificationPermission() === 'granted') notifyFocusEndBrowser(newAction?.text);
     }
   }, [clearTimer, stopAudio, duration, breakDuration, settings.notifyStreak, settings.notifyReminders]);
 

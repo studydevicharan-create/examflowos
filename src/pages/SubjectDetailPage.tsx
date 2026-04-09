@@ -86,7 +86,7 @@ export default function SubjectDetailPage() {
 
       {/* Exam date */}
       <div className="mx-4 mt-2 flex items-center gap-2">
-        <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+        <Calendar className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
         <input
           type="date"
           value={subject.examDate || ''}
@@ -94,16 +94,25 @@ export default function SubjectDetailPage() {
             updateSubjectExamDate(subject.id, e.target.value || null);
             refresh();
           }}
-          className="flex-1 rounded-md border border-border bg-secondary px-2 py-1 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary"
+          className="flex-1 min-w-0 rounded-md border border-border bg-secondary px-2 py-1 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary"
         />
         {subject.examDate && (() => {
           const examMs = new Date(subject.examDate + 'T00:00:00').getTime();
           const todayMs = new Date(new Date().toDateString()).getTime();
           const days = Math.ceil((examMs - todayMs) / (1000 * 60 * 60 * 24));
           return (
-            <span className={`text-xs font-medium ${days <= 0 ? 'text-destructive' : days <= 3 ? 'text-destructive' : days <= 7 ? 'text-yellow-500' : 'text-muted-foreground'}`}>
-              {days <= 0 ? 'Today!' : `${days}d left`}
-            </span>
+            <>
+              <span className={`text-xs font-medium flex-shrink-0 ${days <= 0 ? 'text-destructive' : days <= 3 ? 'text-destructive' : days <= 7 ? 'text-yellow-500' : 'text-muted-foreground'}`}>
+                {days <= 0 ? 'Today!' : `${days}d`}
+              </span>
+              <button
+                onClick={() => { updateSubjectExamDate(subject.id, null); refresh(); }}
+                className="flex-shrink-0 flex items-center justify-center min-h-[32px] min-w-[32px] rounded-md text-muted-foreground active:bg-secondary"
+                title="Clear exam date"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </>
           );
         })()}
       </div>
@@ -129,7 +138,7 @@ export default function SubjectDetailPage() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04 }}
-              className="rounded-xl border border-border bg-card overflow-hidden"
+              className="rounded-xl border border-border bg-card"
             >
               {/* Unit header */}
               <div className="flex items-center gap-3 px-4 py-3">
@@ -165,17 +174,17 @@ export default function SubjectDetailPage() {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ duration: 0.1 }}
-                        className="absolute right-0 top-10 z-20 w-36 rounded-lg border border-border bg-card shadow-lg overflow-hidden"
+                        className="absolute right-0 top-10 z-50 w-36 rounded-lg border border-border bg-card shadow-xl overflow-hidden"
                       >
                         <button
                           onClick={(e) => { e.stopPropagation(); openEditNode(unit); }}
-                          className="flex w-full items-center gap-2 px-3 py-2.5 text-xs text-foreground transition-colors hover:bg-secondary"
+                          className="flex w-full items-center gap-2 px-3 py-2.5 text-xs text-foreground transition-colors active:bg-secondary"
                         >
                           <Pencil className="h-3.5 w-3.5" /> Edit
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); setDeleteConfirmNode(unit); setNodeMenuOpen(null); }}
-                          className="flex w-full items-center gap-2 px-3 py-2.5 text-xs text-destructive transition-colors hover:bg-secondary"
+                          className="flex w-full items-center gap-2 px-3 py-2.5 text-xs text-destructive transition-colors active:bg-secondary"
                         >
                           <Trash2 className="h-3.5 w-3.5" /> Delete
                         </button>
@@ -258,17 +267,17 @@ export default function SubjectDetailPage() {
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
                                 transition={{ duration: 0.1 }}
-                                className="absolute right-0 top-10 z-20 w-36 rounded-lg border border-border bg-card shadow-lg overflow-hidden"
+                                className="absolute right-0 top-10 z-50 w-36 rounded-lg border border-border bg-card shadow-xl overflow-hidden"
                               >
                                 <button
                                   onClick={(e) => { e.stopPropagation(); openEditNode(topic); }}
-                                  className="flex w-full items-center gap-2 px-3 py-2.5 text-xs text-foreground transition-colors hover:bg-secondary"
+                                  className="flex w-full items-center gap-2 px-3 py-2.5 text-xs text-foreground transition-colors active:bg-secondary"
                                 >
                                   <Pencil className="h-3.5 w-3.5" /> Edit
                                 </button>
                                 <button
                                   onClick={(e) => { e.stopPropagation(); setDeleteConfirmNode(topic); setNodeMenuOpen(null); }}
-                                  className="flex w-full items-center gap-2 px-3 py-2.5 text-xs text-destructive transition-colors hover:bg-secondary"
+                                  className="flex w-full items-center gap-2 px-3 py-2.5 text-xs text-destructive transition-colors active:bg-secondary"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" /> Delete
                                 </button>
