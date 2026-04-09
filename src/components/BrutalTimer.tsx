@@ -17,15 +17,15 @@ function getTimeLeft(examDate: string) {
   const h = Math.floor((totalSecs % 86400) / 3600);
   const m = Math.floor((totalSecs % 3600) / 60);
   const s = totalSecs % 60;
-  return { d, h, m, s, totalSecs };
+  const ms = Math.floor((diff % 1000) / 10);
+  return { d, h, m, s, ms, totalSecs };
 }
 
-function pad(n: number) {
-  return String(n).padStart(2, '0');
+function pad(n: number, digits = 2) {
+  return String(n).padStart(digits, '0');
 }
 
-function urgencyClass(d: number, h: number) {
-  if (d === 0 && h < 24) return 'text-destructive';
+function urgencyAccent(d: number) {
   if (d < 3) return 'text-destructive';
   if (d < 7) return 'text-yellow-500';
   return 'text-emerald-500';
@@ -54,7 +54,7 @@ export default function BrutalTimer({ subjects }: Props) {
   const brutalMode = getSettings().brutalMode;
 
   useEffect(() => {
-    const id = setInterval(() => setTick(t => t + 1), 1000);
+    const id = setInterval(() => setTick(t => t + 1), 50);
     return () => clearInterval(id);
   }, []);
 
@@ -67,31 +67,34 @@ export default function BrutalTimer({ subjects }: Props) {
   if (exams.length === 0) return null;
 
   const primary = exams[0];
-  const { d, h, m, s } = primary.tl!;
-  const uc = urgencyClass(d, h);
+  const { d, h, m, s, ms } = primary.tl!;
+  const accent = urgencyAccent(d);
   const bc = urgencyBorder(d);
 
   return (
-    <div className="mt-6">
+    <div className="mb-6">
       <button
         onClick={() => navigate(`/subjects/${primary.id}`)}
         className={`w-full rounded-xl border ${bc} bg-card p-4 text-left active:opacity-90 transition-opacity`}
       >
+        {/* Header row */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-1.5">
-            <Flame className={`h-3.5 w-3.5 ${uc}`} />
+            <Flame className={`h-3.5 w-3.5 ${accent}`} />
             <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-medium">Next Exam</span>
           </div>
-          <span className={`text-[9px] uppercase tracking-widest font-bold ${uc}`}>
+          <span className={`text-[9px] uppercase tracking-widest font-bold ${accent}`}>
             {urgencyLabel(d)}
           </span>
         </div>
 
+        {/* Subject name */}
         <p className={`text-base font-bold text-foreground mb-3 ${brutalMode ? 'tracking-wide' : ''}`}>
           {primary.title}
         </p>
 
-        <div className={`flex items-end gap-0.5 ${uc}`}>
+        {/* Countdown — digits always text-foreground */}
+        <div className="flex items-end gap-0.5">
           <TimeBlock value={pad(d)} label="d" brutal={brutalMode} />
           <Colon brutal={brutalMode} />
           <TimeBlock value={pad(h)} label="h" brutal={brutalMode} />
@@ -101,15 +104,19 @@ export default function BrutalTimer({ subjects }: Props) {
             <>
               <Colon brutal />
               <TimeBlock value={pad(s)} label="s" brutal />
+              <Dot brutal />
+              <TimeBlock value={pad(ms)} label="ms" brutal small />
             </>
           )}
         </div>
 
+        {/* Micro psychology */}
         <p className="mt-3 text-[9px] tracking-widest uppercase text-muted-foreground/40">
           {microText(d)}
         </p>
       </button>
 
+      {/* Second exam preview + expand */}
       {exams.length > 1 && (
         <div className="mt-1.5">
           <button
@@ -130,7 +137,7 @@ export default function BrutalTimer({ subjects }: Props) {
           {expanded && (
             <div className="mt-1 space-y-1.5">
               {exams.slice(1).map(exam => {
-                const ec = urgencyClass(exam.tl!.d, exam.tl!.h);
+                const ec = urgencyAccent(exam.tl!.d);
                 return (
                   <button
                     key={exam.id}
@@ -152,10 +159,28 @@ export default function BrutalTimer({ subjects }: Props) {
   );
 }
 
-function TimeBlock({ value, label, brutal }: { value: string; label: string; brutal: boolean }) {
+function TimeBlock({
+  value,
+  label,
+  brutal,
+  small = false,
+}: {
+  value: string;
+  label: string;
+  brutal: boolean;
+  small?: boolean;
+}) {
   return (
-    <div className="flex flex-col items-center min-w-[32px]">
-      <span className={`font-mono leading-none ${brutal ? 'text-[28px] font-black tracking-tight' : 'text-2xl font-bold'}`}>
+    <div className="flex flex-col items-center min-w-[28px]">
+      <span
+        className={`font-mono leading-none text-foreground ${
+          brutal
+            ? small
+              ? 'text-lg font-black tracking-tight'
+              : 'text-[28px] font-black tracking-tight'
+            : 'text-2xl font-bold'
+        }`}
+      >
         {value}
       </span>
       <span className="text-[8px] text-muted-foreground/50 uppercase tracking-widest mt-0.5">{label}</span>
@@ -165,8 +190,24 @@ function TimeBlock({ value, label, brutal }: { value: string; label: string; bru
 
 function Colon({ brutal }: { brutal: boolean }) {
   return (
-    <span className={`font-mono text-muted-foreground/30 mb-4 mx-0.5 ${brutal ? 'text-2xl font-black' : 'text-xl font-bold'}`}>
+    <span
+      className={`font-mono text-foreground/20 mb-4 mx-0.5 ${
+        brutal ? 'text-2xl font-black' : 'text-xl font-bold'
+      }`}
+    >
       :
+    </span>
+  );
+}
+
+function Dot({ brutal }: { brutal: boolean }) {
+  return (
+    <span
+      className={`font-mono text-foreground/20 mb-4 mx-0.5 ${
+        brutal ? 'text-xl font-black' : 'text-lg font-bold'
+      }`}
+    >
+      .
     </span>
   );
 }
