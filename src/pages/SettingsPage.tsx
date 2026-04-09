@@ -355,6 +355,12 @@ export default function SettingsPage() {
               onChange={v => update({ fontSize: v as AppSettings['fontSize'] })}
             />
           </Row>
+          <ToggleRow
+            label="Brutal Mode"
+            description="Exam timer shows seconds + bold display"
+            checked={settings.brutalMode}
+            onChange={v => update({ brutalMode: v })}
+          />
         </AccordionSection>
 
         {/* FOCUS */}
@@ -794,10 +800,13 @@ function Row({ label, description, children }: { label: string; description?: st
   );
 }
 
-function ToggleRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+function ToggleRow({ label, description, checked, onChange }: { label: string; description?: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <div className="flex items-center justify-between min-h-[48px] py-3">
-      <p className="text-sm text-foreground">{label}</p>
+      <div>
+        <p className="text-sm text-foreground">{label}</p>
+        {description && <p className="text-[10px] text-muted-foreground mt-0.5">{description}</p>}
+      </div>
       <button
         onClick={() => onChange(!checked)}
         className={`relative h-7 w-12 rounded-full transition-colors duration-200 ${

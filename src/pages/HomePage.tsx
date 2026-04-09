@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Brain, TrendingUp, Calendar } from 'lucide-react';
+import { Plus, Brain, TrendingUp } from 'lucide-react';
 import { getSubjects, getFlashcards, getNodes, getNodeProgress, getDailyStats } from '@/lib/store';
 
 import HomeTooltip from '@/components/HomeTooltip';
 import SearchBar from '@/components/SearchBar';
 import { FocusHome } from '@/components/FocusWidget';
+import BrutalTimer from '@/components/BrutalTimer';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -28,16 +29,6 @@ export default function HomePage() {
   const totalProgress = subjects.length > 0
     ? Math.round(subjects.reduce((acc, s) => acc + getNodeProgress(s.rootNodeId, nodes), 0) / subjects.length)
     : 0;
-
-  // Upcoming exams sorted by date
-  const upcomingExams = subjects
-    .filter(s => s.examDate)
-    .map(s => {
-      const diff = Math.ceil((new Date(s.examDate!).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-      return { ...s, daysLeft: diff };
-    })
-    .filter(s => s.daysLeft >= 0)
-    .sort((a, b) => a.daysLeft - b.daysLeft);
 
   return (
     <div className="flex min-h-screen flex-col px-4 pb-28 pt-12">
@@ -62,31 +53,8 @@ export default function HomePage() {
         <StatCard label="Streak" value={`${streak}d`} />
       </div>
 
-      {/* Exam Countdowns */}
-      {upcomingExams.length > 0 && (
-        <div className="mt-6">
-          <h2 className="mb-3 text-sm font-semibold text-foreground flex items-center gap-1.5">
-            <Calendar className="h-3.5 w-3.5 text-primary" /> Upcoming Exams
-          </h2>
-          <div className="space-y-2">
-            {upcomingExams.slice(0, 3).map(s => (
-              <motion.button
-                key={s.id}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => navigate(`/subjects/${s.id}`)}
-                className="flex w-full items-center justify-between rounded-lg border border-border bg-card p-3"
-              >
-                <span className="text-sm text-foreground truncate">{s.title}</span>
-                <span className={`text-xs font-medium ${
-                  s.daysLeft <= 3 ? 'text-destructive' : s.daysLeft <= 7 ? 'text-warning' : 'text-muted-foreground'
-                }`}>
-                  {s.daysLeft === 0 ? 'Today!' : s.daysLeft === 1 ? '1 day' : `${s.daysLeft}d`}
-                </span>
-              </motion.button>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Brutal Timer */}
+      <BrutalTimer subjects={subjects} />
 
       {/* Quick Actions */}
       <div className="mt-6 flex gap-3">

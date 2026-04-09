@@ -26,6 +26,8 @@ export interface AppSettings {
   notifyReminders: boolean;
   notifyStreak: boolean;
   notifyExamMode: boolean;
+  // Timer
+  brutalMode: boolean;
 }
 
 const SETTINGS_KEY = 'studyapp_settings';
@@ -51,6 +53,7 @@ const DEFAULTS: AppSettings = {
   notifyReminders: true,
   notifyStreak: true,
   notifyExamMode: false,
+  brutalMode: false,
 };
 
 export function getSettings(): AppSettings {
