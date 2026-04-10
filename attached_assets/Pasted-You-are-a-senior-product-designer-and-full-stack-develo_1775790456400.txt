@@ -1,0 +1,191 @@
+You are a senior product designer and full-stack developer specializing in minimal, high-performance productivity apps.
+
+Build a student exam preparation system called "ExamFlowOS".
+
+This is NOT a planning app.
+This is NOT a content app.
+This is a STRICT execution system.
+
+---
+
+## 🎯 CORE PRINCIPLE
+
+* Remove thinking
+* Force action
+* Show only what matters NOW
+* No over-tracking
+* No emotional manipulation
+
+User should open app and immediately start working.
+
+---
+
+## 👤 TARGET USER
+
+* Students preparing for exams
+* Easily distracted
+* Overthink planning
+* Needs clarity and execution
+
+---
+
+## 🔥 CORE FEATURES (ONLY THESE)
+
+════════════════════════════════
+
+1. FOCUS + TASK LINK (MAIN SYSTEM)
+   ════════════════════════════════
+
+* User starts focus session
+* Must select topic before starting
+* App auto-opens that topic
+* No idle timer allowed
+
+During session:
+
+* Only timer + topic visible
+* No navigation distractions
+
+After session:
+
+* Show:
+  "Continue or break?"
+
+---
+
+════════════════════════════════
+2. WEAK TOPIC SYSTEM (AUTO)
+════════════════════════════════
+
+* If user marks:
+
+  * Hard
+  * Forgot
+  * Skipped
+
+→ topic becomes WEAK
+
+* Weak topics automatically prioritized
+
+Home shows:
+"Fix Weak Topics"
+
+---
+
+════════════════════════════════
+3. BRUTAL EXAM TIMER (HOME WIDGET)
+════════════════════════════════
+
+* Show ONLY nearest exam
+
+Example:
+"Next: EMF
+02d : 14h : 32m"
+
+* Optional seconds (Brutal Mode)
+
+* If multiple exams:
+  show only next + one preview
+
+---
+
+════════════════════════════════
+4. QUICK RECALL SYSTEM
+════════════════════════════════
+
+* Tap topic → Start Recall
+* Think → Reveal → Mark
+
+NO notes reading focus
+
+---
+
+════════════════════════════════
+5. IMAGE + DIAGRAM RECALL
+════════════════════════════════
+
+* Image flashcards for diagrams
+* Full screen viewing
+* No heavy tools
+
+---
+
+════════════════════════════════
+6. SIMPLE STRUCTURE ONLY
+════════════════════════════════
+
+Subject → Topic → Cards
+
+(No forced Units)
+
+---
+
+════════════════════════════════
+7. PDF → AUTO TOPIC EXTRACTION (ASSISTED)
+════════════════════════════════
+
+* Upload syllabus PDF
+* Extract:
+
+  * topics only
+* Show preview
+* User confirms
+
+Never auto-save blindly
+
+---
+
+════════════════════════════════
+⚙️ WHAT TO REMOVE (IMPORTANT)
+════════════════════════════════
+
+REMOVE:
+
+* weekly reports
+* complex analytics
+* gamification
+* emotional messages
+* planning systems
+* heavy customization
+
+---
+
+════════════════════════════════
+🎨 DESIGN RULES
+════════════════════════════════
+
+* Dark mode
+* Minimal UI
+* No clutter
+* One action per screen
+
+Every screen must answer:
+"What should I do now?"
+
+---
+
+════════════════════════════════
+🎯 FINAL GOAL
+════════════════════════════════
+
+User flow:
+
+Open app →
+See next exam →
+Start focus →
+Work on weak topics →
+Repeat
+
+---
+
+DO NOT:
+
+* Add unnecessary features
+* Add complex UI
+* Add multiple options
+
+ONLY:
+
+* clarity
+* speed
+* execution
