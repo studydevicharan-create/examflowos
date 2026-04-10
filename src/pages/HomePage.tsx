@@ -42,6 +42,9 @@ export default function HomePage() {
         <p className="text-sm text-muted-foreground">Good {getGreeting()}. Stay focused.</p>
       </motion.div>
 
+      {/* Brutal Timer — first thing user sees */}
+      <BrutalTimer subjects={subjects} />
+
       <HomeTooltip />
       <SearchBar />
       <FocusHome />
@@ -52,9 +55,6 @@ export default function HomePage() {
         <StatCard label="Progress" value={`${totalProgress}%`} />
         <StatCard label="Streak" value={`${streak}d`} />
       </div>
-
-      {/* Brutal Timer */}
-      <BrutalTimer subjects={subjects} />
 
       {/* Quick Actions */}
       <div className="mt-6 flex gap-3">
