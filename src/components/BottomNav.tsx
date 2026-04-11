@@ -1,12 +1,13 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, BookOpen, Brain, BarChart3, Settings } from 'lucide-react';
+import { Chrome as Home, BookOpen, Brain, ChartBar as BarChart3, Settings, Vault, User } from 'lucide-react';
 
 const tabs = [
   { to: '/', icon: Home, label: 'Home' },
   { to: '/subjects', icon: BookOpen, label: 'Subjects' },
   { to: '/recall', icon: Brain, label: 'Recall' },
+  { to: '/vault', icon: Vault, label: 'Vault' },
   { to: '/stats', icon: BarChart3, label: 'Stats' },
-  { to: '/settings', icon: Settings, label: 'Settings' },
+  { to: '/profile', icon: User, label: 'Profile' },
 ];
 
 export default function BottomNav() {
