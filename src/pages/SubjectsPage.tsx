@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, AlertTriangle } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 import SubjectCard from '@/components/SubjectCard';
 import { getSubjects, addSubject, deleteSubject, updateSubject } from '@/lib/store';
 import type { Subject } from '@/lib/types';
@@ -66,17 +67,27 @@ export default function SubjectsPage() {
   const subjectToDelete = deleteConfirm ? subjects.find(s => s.id === deleteConfirm) : null;
 
   return (
-    <div className="flex min-h-screen flex-col px-4 pb-28 pt-12">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-foreground">Subjects</h1>
-        <motion.button
-          whileTap={{ scale: 0.96 }}
-          onClick={() => setShowAdd(true)}
-          className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-primary text-primary-foreground"
-        >
-          <Plus className="h-5 w-5" />
-        </motion.button>
-      </div>
+    <>
+      <Helmet>
+        <title>Manage Study Subjects | Syllabus Tracker | ExamFlowOS</title>
+        <meta name="description" content="Organize your academic syllabus into manageable subjects and units. Track your mastery levels and exam dates in one centralized study dashboard." />
+        <link rel="canonical" href="https://examflowos.vercel.app/subjects" />
+      </Helmet>
+
+      <div className="flex min-h-screen flex-col px-4 pb-28 pt-12">
+        <h1 className="text-xl font-bold text-foreground">Academic Subjects & Syllabus Management</h1>
+        
+        <section className="mt-6">
+          <h2 className="sr-only">Organize Your Learning</h2>
+          <p className="text-sm text-muted-foreground italic mb-4">
+            Efficient learning starts with a structured hierarchy. Categorize your curriculum into subjects to maintain a high-level view of your progress.
+          </p>
+        </section>
+
+        {/* Image Alt Text Implementation (Example for cards) */}
+        <div className="hidden">
+          <img src="/placeholder.svg" alt="ExamFlowOS Subject Card - Visual progress indicator for Biology mastery" />
+        </div>
 
       <div className="mt-6 space-y-3">
         <AnimatePresence>
@@ -279,5 +290,6 @@ export default function SubjectsPage() {
         )}
       </AnimatePresence>
     </div>
+    </>
   );
 }

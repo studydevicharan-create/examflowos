@@ -1,6 +1,45 @@
 import { motion } from 'framer-motion';
-import { Flame, Target, TrendingUp, Brain } from 'lucide-react';
+import { Flame, Target, TrendingUp, Brain, AlertTriangle } from 'lucide-react';
 import { getSubjects, getFlashcards, getNodes, getNodeProgress, getDailyStats, isWeakCard } from '@/lib/store';
+
+function ProgressRing({ progress, size, delay = 0 }: { progress: number; size: number; delay?: number }) {
+  const stroke = 4;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (progress / 100) * circumference;
+
+  return (
+    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="transform -rotate-90">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="currentColor"
+          strokeWidth={stroke}
+          fill="none"
+          className="text-muted"
+        />
+        <motion.circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="currentColor"
+          strokeWidth={stroke}
+          fill="none"
+          className="text-primary"
+          strokeLinecap="round"
+          initial={{ strokeDasharray: circumference, strokeDashoffset: circumference }}
+          animate={{ strokeDashoffset: offset }}
+          transition={{ duration: 0.6, delay, ease: 'easeOut' }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-xs font-bold text-foreground">{progress}%</span>
+      </div>
+    </div>
+  );
+}
 
 export default function StatsPage() {
   const subjects = getSubjects();
@@ -48,77 +87,55 @@ export default function StatsPage() {
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
+          transition={{ delay: 0.1 }}
           className="rounded-xl border border-border bg-card p-4"
         >
           <div className="flex items-center gap-2 mb-2">
-            <Brain className="h-4 w-4 text-primary" />
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Today</span>
+            <Target className="h-4 w-4 text-primary" />
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Accuracy</span>
           </div>
-          <p className="text-3xl font-bold text-foreground">{today?.cardsReviewed ?? 0}<span className="text-sm font-normal text-muted-foreground ml-1">cards</span></p>
+          <p className="text-3xl font-bold text-foreground">{avgAccuracy}<span className="text-sm font-normal text-muted-foreground ml-1">%</span></p>
         </motion.div>
       </div>
 
-      {/* Progress Rings */}
-      {subjects.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mt-4 rounded-xl border border-border bg-card p-4"
-        >
-          <div className="flex items-center gap-2 mb-4">
-            <Target className="h-4 w-4 text-primary" />
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Subject Progress</span>
-          </div>
-          <div className="flex flex-wrap gap-6 justify-center">
-            {subjects.map((s, i) => {
-              const progress = getNodeProgress(s.rootNodeId, nodes);
-              return (
-                <div key={s.id} className="flex flex-col items-center gap-2">
-                  <ProgressRing progress={progress} size={64} delay={i * 0.08} />
-                  <p className="text-[10px] text-muted-foreground truncate max-w-[72px] text-center">{s.title}</p>
-                </div>
-              );
-            })}
-          </div>
-        </motion.div>
-      )}
-
-      {/* Heat Bars */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15 }}
-        className="mt-4 rounded-xl border border-border bg-card p-4"
-      >
-        <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="h-4 w-4 text-primary" />
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Card Health</span>
-        </div>
+      {/* Subject Progress */}
+      <div className="mt-6">
+        <h2 className="mb-3 text-sm font-semibold text-foreground">Subject Progress</h2>
         <div className="space-y-3">
-          <HeatBar label="Strong" value={strongCount} max={totalCards || 1} color="var(--success)" />
-          <HeatBar label="Weak" value={weakCount} max={totalCards || 1} color="var(--destructive)" />
-          <HeatBar label="Accuracy" value={avgAccuracy} max={100} color="var(--primary)" suffix="%" />
+          {subjects.map(s => {
+            const progress = getNodeProgress(s.rootNodeId, nodes);
+            return (
+              <motion.div
+                key={s.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="rounded-xl border border-border bg-card p-4"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-foreground">{s.title}</span>
+                  <span className="text-xs text-muted-foreground">{progress}%</span>
+                </div>
+                <ProgressRing progress={progress} size={60} />
+              </motion.div>
+            );
+          })}
         </div>
-        <div className="mt-3 flex items-center justify-between text-[10px] text-muted-foreground">
-          <span>{totalCards} total cards</span>
-          <span>{totalReviews} total reviews</span>
-        </div>
-      </motion.div>
+      </div>
 
-      {/* Focus Card */}
       {focusSubject && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-4"
+          transition={{ delay: 0.3 }}
+          className="mt-6 rounded-xl border border-warning/20 bg-warning/5 p-4"
         >
-          <p className="text-[10px] uppercase tracking-wider text-primary mb-2">Focus Today</p>
-          <p className="text-sm font-semibold text-foreground">{focusSubject.subject.title}</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            {focusSubject.weak} weak card{focusSubject.weak !== 1 ? 's' : ''} need attention
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle className="h-4 w-4 text-warning" />
+            <span className="text-sm font-semibold text-foreground">Focus Area</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {focusSubject.subject.title} has {focusSubject.weak} weak card{focusSubject.weak !== 1 ? 's' : ''} that need attention
           </p>
         </motion.div>
       )}
@@ -129,65 +146,6 @@ export default function StatsPage() {
           <p className="mt-1 text-[10px] text-muted-foreground/50">Start studying to see stats. — ExamFlowOS</p>
         </div>
       )}
-    </div>
-  );
-}
-
-function ProgressRing({ progress, size, delay = 0 }: { progress: number; size: number; delay?: number }) {
-  const stroke = 4;
-  const radius = (size - stroke) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (progress / 100) * circumference;
-
-  return (
-    <div className="relative" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="hsl(var(--muted))"
-          strokeWidth={stroke}
-        />
-        <motion.circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="hsl(var(--primary))"
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          initial={{ strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 0.8, delay, ease: 'easeOut' }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-xs font-bold text-foreground">{progress}%</span>
-      </div>
-    </div>
-  );
-}
-
-function HeatBar({ label, value, max, color, suffix = '' }: { label: string; value: number; max: number; color: string; suffix?: string }) {
-  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-xs text-muted-foreground">{label}</span>
-        <span className="text-xs font-medium text-foreground">{value}{suffix}</span>
-      </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-        <motion.div
-          className="h-full rounded-full"
-          style={{ backgroundColor: `hsl(${color})` }}
-          initial={{ width: 0 }}
-          animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-        />
-      </div>
     </div>
   );
 }
